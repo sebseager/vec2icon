@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_1_2)">
+<rect width="1024" height="1024" rx="224" fill="url(#paint0_linear_1_2)"/>
+<path id="Bolt" d="M544 128L288 576H480L416 896L736 448H544L608 128H544Z" fill="white"/>
+<circle id="Dot" cx="512" cy="760" r="48" fill="#1A1A1A" fill-opacity="0.4"/>
+</g>
+<defs>
+<clipPath id="clip0_1_2">
+<rect width="1024" height="1024" rx="224" fill="white"/>
+</clipPath>
+<linearGradient id="paint0_linear_1_2" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+<stop stop-color="#4F8CFF"/>
+<stop offset="1" stop-color="#8A4FFF"/>
+</linearGradient>
+</defs>
+</svg>
