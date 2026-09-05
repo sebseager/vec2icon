@@ -84,14 +84,14 @@ type Glass = {
   shadow: { kind: 'neutral' | 'layer-color' | 'none'; opacity: number }
 }
 
-type Group = { id: string; name: string; layers: Layer[]; glass: Glass;
+type Group = { id: string; name: string; layers: Layer[]; glass: Glass; // layers top-most first
                opacity: number; blendMode: BlendMode; hidden: boolean }
 
 type IconDoc = {
   name: string
   fill: { default: Fill; dark?: Fill }
   watchOS: boolean
-  groups: Group[]     // bottom-most first, matching icon.json order reversed for display
+  groups: Group[]     // top-most first, same order as icon.json and the layers panel
 }
 ```
 
@@ -158,7 +158,7 @@ Three-pane layout, desktop first, works down to ~1024px wide.
 Top bar: project name (editable, becomes the bundle name), undo, redo, import,
 export, help.
 
-Layers panel (left): groups as collapsible sections. Layers listed top-most first.
+Layers panel (left): groups as collapsible sections, top-most group first. Layers listed top-most first.
 Drag to reorder within and across groups (pointer and keyboard sensors). Per row:
 visibility eye, glass toggle, name (double-click to rename). Context menu: split,
 merge, duplicate, delete, move to new group, ungroup. Group header: name, glass
@@ -166,7 +166,7 @@ summary, menu (rename, delete group, keep layers).
 
 Canvas (center): the renderer output at fit-to-view zoom, wheel/pinch zoom.
 Selection by click; drag to move; corner handles scale uniformly (Shift for free
-scale); a rotate handle above the box; Alt-drag duplicates nothing (kept simple).
+scale); a rotate handle above the box.
 Arrow keys nudge 1pt, Shift+arrows 10pt. Snap to canvas center and to the
 platform safe area when within 4pt. Toolbar above canvas: rendition tabs
 (Default, Dark, Clear Light, Clear Dark, Tinted Light, Tinted Dark), tint color
