@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { updateLayers as updateLayersOp } from '@/core/model/ops'
 import type { Appearance, BlendMode, Layer } from '@/core/model/types'
 import { useEditor } from '@/state'
-import { Field, Section } from '../lib/Field'
+import { Field, Section, SwitchRow } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
 import { IconButton } from '../lib/IconButton'
 import { NumberField } from '../lib/NumberField'
@@ -14,7 +14,6 @@ import { BLEND_MODE_OPTIONS } from '../lib/options'
 import { Select } from '../lib/Select'
 import { Slider } from '../lib/Slider'
 import { TextField } from '../lib/TextField'
-import { Toggle } from '../lib/Toggle'
 import { LayerOverrides } from './LayerOverrides'
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
@@ -162,25 +161,23 @@ export const LayerInspector = ({
           </HelpTip>
         </Field>
 
-        <Field label="Glass">
-          <Toggle
-            label="Glass"
-            checked={first.glass}
-            onChange={(glass) => updateLayers(ids, { glass })}
-          />
-          <HelpTip topic="Glass">
-            Off leaves the layer flat: no material, no highlight, no shadow. Use it for artwork that
-            should read as printed on the icon rather than made of glass.
-          </HelpTip>
-        </Field>
+        <SwitchRow
+          label="Glass"
+          help={
+            <HelpTip topic="Glass">
+              Off leaves the layer flat: no material, no highlight, no shadow. Use it for artwork
+              that should read as printed on the icon rather than made of glass.
+            </HelpTip>
+          }
+          checked={first.glass}
+          onChange={(glass) => updateLayers(ids, { glass })}
+        />
 
-        <Field label="Hidden">
-          <Toggle
-            label="Hidden"
-            checked={first.hidden}
-            onChange={(hidden) => updateLayers(ids, { hidden })}
-          />
-        </Field>
+        <SwitchRow
+          label="Hidden"
+          checked={first.hidden}
+          onChange={(hidden) => updateLayers(ids, { hidden })}
+        />
       </Section>
 
       {single && appearance !== 'default' ? (

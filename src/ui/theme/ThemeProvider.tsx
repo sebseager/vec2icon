@@ -23,3 +23,16 @@ export const useTheme = (): { theme: ThemeChoice; setTheme: (theme: ThemeChoice)
   const { theme, setTheme } = useNextTheme()
   return { theme: (theme as ThemeChoice | undefined) ?? 'system', setTheme }
 }
+
+/** Whether the page will come up dark, worked out before React mounts so the first
+ * paint can already use it. Mirrors next-themes' own resolution. */
+export const startsDark = (): boolean => {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored === 'dark') return true
+    if (stored === 'light') return false
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch {
+    return false
+  }
+}

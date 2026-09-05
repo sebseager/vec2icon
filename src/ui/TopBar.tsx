@@ -1,6 +1,6 @@
 /** Document identity on the left, the actions that leave the editor on the right. */
 import { Download, Redo2, Undo2, Upload } from 'lucide-react'
-import { type KeyboardEvent, useRef, useState, useSyncExternalStore } from 'react'
+import { type KeyboardEvent, useState, useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -9,6 +9,7 @@ import { AppMenu } from './AppMenu'
 import { IssuesPanel } from './IssuesPanel'
 import { IconButton } from './lib/IconButton'
 import { importFiles } from './lib/importFiles'
+import { openImportPicker, registerImportInput } from './lib/importPicker'
 
 /** zundo keeps history in its own store, so subscribe to it rather than to `doc`. */
 const useHistory = (): { canUndo: boolean; canRedo: boolean } => {
@@ -67,14 +68,13 @@ const DocName = () => {
   )
 }
 
-const Divider = () => <Separator orientation="vertical" className="mx-1 h-4 self-center" />
+const Divider = () => <Separator orientation="vertical" className="mx-1 self-stretch" />
 
 export const TopBar = () => {
   const { canUndo, canRedo } = useHistory()
   const undo = useEditor((s) => s.undo)
   const redo = useEditor((s) => s.redo)
   const setView = useEditor((s) => s.setView)
-  const fileInput = useRef<HTMLInputElement>(null)
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-background px-3">
@@ -93,10 +93,8 @@ export const TopBar = () => {
         <Redo2 size={15} aria-hidden="true" />
       </IconButton>
 
-      <Divider />
-
       <input
-        ref={fileInput}
+        ref={registerImportInput}
         type="file"
         multiple
         accept=".svg,.svgz"
@@ -107,7 +105,7 @@ export const TopBar = () => {
           void importFiles(files, useEditor.getState())
         }}
       />
-      <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
+      <Button variant="outline" size="sm" onClick={openImportPicker}>
         <Upload data-icon="inline-start" aria-hidden="true" />
         Import
       </Button>

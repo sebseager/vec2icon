@@ -1,14 +1,14 @@
 /** Shown when a group is selected: the glass material the whole group shares. */
-import { Button } from '@/components/ui/button'
+import { X } from 'lucide-react'
 import { setGlass as setGlassOp, updateGroup as updateGroupOp } from '@/core/model/ops'
 import type { BlendMode, Glass, Group } from '@/core/model/types'
 import { useEditor } from '@/state'
-import { Field, Section } from '../lib/Field'
+import { Field, Section, SwitchRow } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
+import { IconButton } from '../lib/IconButton'
 import { BLEND_MODE_OPTIONS } from '../lib/options'
 import { type Option, Select } from '../lib/Select'
 import { Slider } from '../lib/Slider'
-import { Toggle } from '../lib/Toggle'
 
 const LIGHTING_OPTIONS: readonly Option<Glass['lighting']>[] = [
   { value: 'individual', label: 'Individual' },
@@ -76,13 +76,11 @@ export const GroupInspector = ({ group }: { group: Group }) => {
           </HelpTip>
         </Field>
 
-        <Field label="Specular">
-          <Toggle
-            label="Specular"
-            checked={glass.specular}
-            onChange={(specular) => setGlass(group.id, { specular })}
-          />
-        </Field>
+        <SwitchRow
+          label="Specular"
+          checked={glass.specular}
+          onChange={(specular) => setGlass(group.id, { specular })}
+        />
 
         <Field label="Placement">
           <Select
@@ -95,14 +93,13 @@ export const GroupInspector = ({ group }: { group: Group }) => {
           />
           <Ic2Tag />
           {placement !== undefined ? (
-            <Button
-              variant="ghost"
+            <IconButton
+              label="Clear specular placement"
               size="xs"
-              className="shrink-0"
               onClick={() => setGlass(group.id, { specularPlacement: undefined })}
             >
-              Clear
-            </Button>
+              <X size={13} aria-hidden="true" />
+            </IconButton>
           ) : null}
         </Field>
 
@@ -119,21 +116,22 @@ export const GroupInspector = ({ group }: { group: Group }) => {
       </Section>
 
       <Section title="Refractivity" help={<Ic2Tag />}>
-        <Field label="Enabled">
-          <Toggle
-            label="Refractivity"
-            checked={refractivity?.enabled === true}
-            onChange={(on) =>
-              setGlass(group.id, {
-                refractivity: on ? { enabled: true, strength: 0.5, depth: 0.5 } : undefined,
-              })
-            }
-          />
-          <HelpTip topic="Refractivity">
-            Bends what is behind the icon through the edge of the glass. Icon Composer 2 only, so
-            turning it on makes the document require Xcode 27.
-          </HelpTip>
-        </Field>
+        <SwitchRow
+          label="Enabled"
+          name="Refractivity"
+          help={
+            <HelpTip topic="Refractivity">
+              Bends what is behind the icon through the edge of the glass. Icon Composer 2 only, so
+              turning it on makes the document require Xcode 27.
+            </HelpTip>
+          }
+          checked={refractivity?.enabled === true}
+          onChange={(on) =>
+            setGlass(group.id, {
+              refractivity: on ? { enabled: true, strength: 0.5, depth: 0.5 } : undefined,
+            })
+          }
+        />
         {refractivity ? (
           <>
             <Slider
@@ -151,15 +149,14 @@ export const GroupInspector = ({ group }: { group: Group }) => {
       </Section>
 
       <Section title="Translucency">
-        <Field label="Enabled">
-          <Toggle
-            label="Translucency"
-            checked={glass.translucency.enabled}
-            onChange={(enabled) =>
-              setGlass(group.id, { translucency: { ...glass.translucency, enabled } })
-            }
-          />
-        </Field>
+        <SwitchRow
+          label="Enabled"
+          name="Translucency"
+          checked={glass.translucency.enabled}
+          onChange={(enabled) =>
+            setGlass(group.id, { translucency: { ...glass.translucency, enabled } })
+          }
+        />
         <Slider
           label="Amount"
           value={glass.translucency.value}
@@ -199,13 +196,12 @@ export const GroupInspector = ({ group }: { group: Group }) => {
             onChange={(blendMode: BlendMode) => updateGroup(group.id, { blendMode })}
           />
         </Field>
-        <Field label="Hidden">
-          <Toggle
-            label="Group hidden"
-            checked={group.hidden}
-            onChange={(hidden) => updateGroup(group.id, { hidden })}
-          />
-        </Field>
+        <SwitchRow
+          label="Hidden"
+          name="Group hidden"
+          checked={group.hidden}
+          onChange={(hidden) => updateGroup(group.id, { hidden })}
+        />
       </Section>
     </>
   )

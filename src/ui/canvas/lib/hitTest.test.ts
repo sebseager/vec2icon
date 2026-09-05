@@ -74,4 +74,17 @@ describe('hitTest', () => {
     expect(hitTest(doc, { x: 50, y: 50 })).toBeNull()
     expect(hitTest(doc, { x: 450, y: 450 })?.id).toBe(moved.id)
   })
+
+  it('tests against the turned box of a rotated layer, not its axis-aligned bounds', () => {
+    // A thin 400×40 bar centred on the canvas, turned upright: its axis-aligned bounds
+    // would cover (330, 512) but the bar itself does not.
+    const bar = layerAt(
+      'bar',
+      { x: 312, y: 492, width: 400, height: 40 },
+      { transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 90 } },
+    )
+    const doc = docOf(createGroup('g', [bar]))
+    expect(hitTest(doc, { x: 512, y: 340 })?.id).toBe(bar.id)
+    expect(hitTest(doc, { x: 330, y: 512 })).toBeNull()
+  })
 })

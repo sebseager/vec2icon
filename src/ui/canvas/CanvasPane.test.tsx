@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGroup, createLayer, emptyDoc } from '@/core/model/defaults'
@@ -137,16 +137,25 @@ describe('CanvasPane', () => {
 
   it('invites an import while the document is empty', () => {
     render(<CanvasPane />)
-    expect(screen.getByText('Import SVG files to start')).toBeDefined()
+    expect(screen.getByText(/drag-and-drop SVG files here to start/)).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDefined()
+  })
+
+  it('loads the bundled example from the empty state', async () => {
+    render(<CanvasPane />)
+    await userEvent.click(screen.getByRole('button', { name: 'Load an example' }))
+    await waitFor(() => expect(useEditor.getState().doc.groups.length).toBeGreaterThan(0))
+    expect(useEditor.getState().doc.name).toBe('Sunset')
   })
 
   it('labels the preview as approximate, or flat without WebGL', () => {
     render(<CanvasPane />)
-    expect(screen.getByRole('button', { name: 'Approximate preview' })).toBeDefined()
+    expect(screen.getByText('Approximate preview')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'About Approximate preview' })).toBeDefined()
     cleanup()
     fake.renderer.kind = 'flat'
     render(<CanvasPane />)
-    expect(screen.getByRole('button', { name: 'Flat preview (WebGL unavailable)' })).toBeDefined()
+    expect(screen.getByText('Flat preview (WebGL unavailable)')).toBeDefined()
   })
 
   it('selects a layer, drags it, and records the drag as one undo step', () => {

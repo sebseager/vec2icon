@@ -1,5 +1,6 @@
 /** The two shapes every inspector control sits in: a labelled row, and a titled block. */
 import type { ReactNode } from 'react'
+import { Toggle } from './Toggle'
 
 export const Field = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex h-7 items-center gap-2">
@@ -24,4 +25,29 @@ export const Section = ({
     </header>
     <div className="mt-0.5">{children}</div>
   </section>
+)
+
+/** A labelled on/off row: the label runs the full width, the help sits just left of
+ * the switch, and the switch is pinned to the right edge. */
+export const SwitchRow = ({
+  label,
+  name,
+  help,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string
+  /** Accessible name when it should say more than the visible label. */
+  name?: string
+  help?: ReactNode
+  checked: boolean
+  onChange: (checked: boolean) => void
+  disabled?: boolean
+}) => (
+  <div className="flex h-7 items-center gap-2">
+    <span className="min-w-0 flex-1 truncate text-muted-foreground">{label}</span>
+    {help}
+    <Toggle label={name ?? label} checked={checked} onChange={onChange} disabled={disabled} />
+  </div>
 )

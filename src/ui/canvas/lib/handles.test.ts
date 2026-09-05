@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { createLayer } from '@/core/model/defaults'
+import { frameFromBBox, layerFrame } from './frame'
 import { handlePositions, hitHandle, ROTATE_OFFSET_PX } from './handles'
 
-const box = { x: 0, y: 0, width: 100, height: 100 }
+const box = frameFromBBox({ x: 0, y: 0, width: 100, height: 100 })
 
 describe('handlePositions', () => {
   it('puts one handle at each corner', () => {
@@ -35,5 +37,35 @@ describe('hitHandle', () => {
   it('scales the hit radius with the zoom level', () => {
     expect(hitHandle(box, { x: 105, y: 105 }, 1)).toBeNull()
     expect(hitHandle(box, { x: 105, y: 105 }, 2)).toBe('se')
+  })
+})
+
+describe('on a rotated layer', () => {
+  /** A 200×100 box centred on the canvas, turned a quarter turn clockwise. */
+  const turned = layerFrame(
+    createLayer({
+      name: 'turned',
+      svg: '<g/>',
+      defs: '',
+      sourceViewBox: [0, 0, 1024, 1024],
+      bbox: { x: 412, y: 462, width: 200, height: 100 },
+      transform: { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 90 },
+    }),
+  )
+
+  it('turns the frame with the artwork', () => {
+    expect(turned.angle).toBeCloseTo(90)
+    expect(turned.corners.nw.x).toBeCloseTo(562)
+    expect(turned.corners.nw.y).toBeCloseTo(412)
+    expect(turned.corners.se.x).toBeCloseTo(462)
+    expect(turned.corners.se.y).toBeCloseTo(612)
+  })
+
+  it('keeps the rotate handle out of the turned top edge', () => {
+    const p = handlePositions(turned, 1)
+    expect(p.rotate.x).toBeCloseTo(562 + ROTATE_OFFSET_PX)
+    expect(p.rotate.y).toBeCloseTo(512)
+    expect(hitHandle(turned, p.rotate, 1)).toBe('rotate')
+    expect(hitHandle(turned, { x: 562, y: 412 }, 1)).toBe('nw')
   })
 })

@@ -1,5 +1,4 @@
 /** The dense control row above the canvas: rendition, tint, platform, wallpaper, light. */
-import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -10,11 +9,11 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Platform, Rendition } from '@/core/model/types'
 import type { Renderer } from '@/core/render'
 import { useEditor, type Wallpaper } from '@/state'
 import { ColorField } from '../lib/ColorField'
+import { HelpTip } from '../lib/HelpTip'
 import { LightDial } from './LightDial'
 
 /** `short` is what the tab shows; `label` stays its accessible name and tooltip, so the
@@ -42,7 +41,7 @@ const WALLPAPERS: Array<{ value: Wallpaper; label: string }> = [
   { value: 'checker', label: 'Checker' },
 ]
 
-const Divider = () => <Separator orientation="vertical" className="h-4" />
+const Divider = () => <Separator orientation="vertical" className="self-stretch" />
 
 type Props = {
   /** null until the renderer has been created. */
@@ -56,7 +55,7 @@ export const CanvasToolbar = ({ rendererKind }: Props) => {
   const flat = rendererKind === 'flat'
 
   return (
-    <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted px-2 py-1 text-muted-foreground">
+    <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted px-2 text-muted-foreground">
       <Tabs
         className="shrink-0"
         value={view.rendition}
@@ -118,7 +117,7 @@ export const CanvasToolbar = ({ rendererKind }: Props) => {
         value={view.wallpaper}
         onValueChange={(value) => setView({ wallpaper: value as Wallpaper })}
       >
-        <SelectTrigger size="sm" className="h-6 text-xs" aria-label="Wallpaper">
+        <SelectTrigger size="sm" className="text-xs data-[size=sm]:h-6" aria-label="Wallpaper">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -137,29 +136,21 @@ export const CanvasToolbar = ({ rendererKind }: Props) => {
         <span className="w-8 tabular-nums">{Math.round(view.lightAngle)}&deg;</span>
       </div>
 
-      <Tooltip>
-        <TooltipTrigger
-          render={<Button variant="link" size="xs" className="ml-auto text-muted-foreground" />}
-        >
-          {flat ? 'Flat preview (WebGL unavailable)' : 'Approximate preview'}
-        </TooltipTrigger>
-        <TooltipContent side="bottom" align="end" className="max-w-[19rem] text-xs leading-relaxed">
-          <div>
-            <p className="mb-1.5 font-medium">What you see here is an estimate</p>
-            <p>
-              Glass, refraction and specular highlights are approximations of Apple&rsquo;s
-              renderer, and the iOS 27 generation is not matched. Icon Composer and Xcode are the
-              reference for how the icon will really look.
-            </p>
-            {flat && (
-              <p className="mt-1.5">
-                WebGL2 is unavailable in this browser, so layers are composited flat with a drop
-                shadow and no glass at all.
-              </p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
+      <span className="ml-auto flex shrink-0 items-center gap-1.5">
+        <span>{flat ? 'Flat preview (WebGL unavailable)' : 'Approximate preview'}</span>
+        <HelpTip topic="Approximate preview">
+          Glass, refraction and specular highlights are approximations of Apple&rsquo;s renderer,
+          and the iOS 27 generation is not matched. Icon Composer and Xcode are the reference for
+          how the icon will really look.
+          {flat ? (
+            <>
+              {' '}
+              WebGL2 is unavailable in this browser, so layers are composited flat with a drop
+              shadow and no glass at all.
+            </>
+          ) : null}
+        </HelpTip>
+      </span>
     </div>
   )
 }

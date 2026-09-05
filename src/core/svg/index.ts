@@ -1,6 +1,7 @@
 import { createGroup, createLayer } from '../model/defaults'
 import type { Group, Layer, ViewBox } from '../model/types'
 import { type Measurer, measureBBox } from './bbox'
+import { fitLayersToCanvas } from './fit'
 import { relintLayers } from './lint'
 import { decodeSvgBytes, parseSvg, readViewBox } from './parse'
 import { rejectionReason } from './sanitize'
@@ -65,6 +66,17 @@ const groupsForSingleFile = (
   return paintOrder.reverse()
 }
 
+/** One file's groups fitted to the canvas as a single piece, so nothing overhangs. */
+const fitGroupsToCanvas = (groups: Group[]): Group[] => {
+  const fitted = new Map(
+    fitLayersToCanvas(groups.flatMap((g) => g.layers)).map((layer) => [layer.id, layer]),
+  )
+  return groups.map((group) => ({
+    ...group,
+    layers: group.layers.map((layer) => fitted.get(layer.id) ?? layer),
+  }))
+}
+
 /**
  * Turn dropped files into groups of layers, top-most first. Files that cannot be
  * imported safely are reported in `rejected` rather than thrown.
@@ -95,11 +107,8 @@ export const importSvgFiles = async (
         rejected.push({ file: single.file.name, reason: 'Contains nothing to draw' })
         return { groups: [], rejected }
       }
-      const groups = groupsForSingleFile(
-        items,
-        basename(single.file.name),
-        single.viewBox,
-        measurer,
+      const groups = fitGroupsToCanvas(
+        groupsForSingleFile(items, basename(single.file.name), single.viewBox, measurer),
       )
       return {
         groups: groups.map((group) => ({ ...group, layers: relintLayers(group.layers) })),
@@ -115,7 +124,7 @@ export const importSvgFiles = async (
   for (const entry of opened) {
     try {
       const split = wholeDocumentLayer(entry.root, basename(entry.file.name))
-      layers.push(toLayer(split, entry.viewBox, measurer))
+      layers.push(...fitLayersToCanvas([toLayer(split, entry.viewBox, measurer)]))
     } catch (error) {
       rejected.push({ file: entry.file.name, reason: (error as Error).message })
     }

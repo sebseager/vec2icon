@@ -10,6 +10,7 @@ import { LayersPanel } from './layers/LayersPanel'
 import { importFiles } from './lib/importFiles'
 import { Toasts } from './Toasts'
 import { TopBar } from './TopBar'
+import { useWallpaperFollowsTheme } from './theme/useWallpaperFollowsTheme'
 
 const carriesFiles = (event: DragEvent): boolean =>
   Array.from(event.dataTransfer?.types ?? []).includes('Files')
@@ -58,6 +59,7 @@ const useFileDrop = (): boolean => {
 
 export default function App() {
   const draggingFiles = useFileDrop()
+  useWallpaperFollowsTheme()
 
   return (
     <TooltipProvider delay={150}>

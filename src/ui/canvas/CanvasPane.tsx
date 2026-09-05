@@ -1,4 +1,6 @@
 /** The canvas pane: renderer output, selection chrome and the transform gestures. */
+
+import { FileUp } from 'lucide-react'
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -7,14 +9,18 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Button } from '@/components/ui/button'
 import { layerCanvasBBox } from '@/core/model/geometry'
 import type { BBox, IconDoc, Layer, Transform } from '@/core/model/types'
 import { CANVAS_SIZE } from '@/core/model/types'
 import { createRenderer, type Renderer } from '@/core/render'
 import { safeArea } from '@/core/render/shapes'
 import { useEditor } from '@/state'
+import { openImportPicker } from '../lib/importPicker'
+import { loadExample } from '../lib/loadExample'
 import { CanvasToolbar } from './CanvasToolbar'
 import { type Point, unionBBox } from './lib/bbox'
+import { type Frame, layerFrame } from './lib/frame'
 import { rotateResult, scaleResult } from './lib/gestures'
 import { type HandleId, handleCursor, hitHandle } from './lib/handles'
 import { hitTest } from './lib/hitTest'
@@ -53,8 +59,6 @@ const layersById = (doc: IconDoc, ids: readonly string[]): Layer[] => {
   return out
 }
 
-const centreOf = (box: BBox): Point => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
-
 export const CanvasPane = () => {
   const doc = useEditor((s) => s.doc)
   const view = useEditor((s) => s.view)
@@ -82,14 +86,14 @@ export const CanvasPane = () => {
   const ptsPerPixel = CANVAS_SIZE / size
 
   const selectedLayers = useMemo(() => layersById(doc, selectedIds), [doc, selectedIds])
-  const selectedBoxes = useMemo(
-    () => selectedLayers.map((layer) => ({ id: layer.id, bbox: layerCanvasBBox(layer) })),
+  const selectedFrames = useMemo(
+    () => selectedLayers.map((layer) => ({ id: layer.id, frame: layerFrame(layer) })),
     [selectedLayers],
   )
-  const hoverBox = useMemo(() => {
+  const hoverFrame = useMemo((): Frame | null => {
     if (hoverId === null || selectedIds.includes(hoverId)) return null
     const layer = layersById(doc, [hoverId])[0]
-    return layer ? layerCanvasBBox(layer) : null
+    return layer ? layerFrame(layer) : null
   }, [doc, hoverId, selectedIds])
 
   // Own the renderer for the life of the pane; the export dialog borrows it.
@@ -171,9 +175,10 @@ export const CanvasPane = () => {
 
   /** The handle under `point`, and the selected layer it belongs to. */
   const handleAt = (point: Point): { layer: Layer; handle: HandleId } | null => {
-    for (const layer of selectedLayers) {
-      const handle = hitHandle(layerCanvasBBox(layer), point, ptsPerPixel)
-      if (handle) return { layer, handle }
+    for (const { id, frame } of selectedFrames) {
+      const handle = hitHandle(frame, point, ptsPerPixel)
+      const layer = selectedLayers.find((l) => l.id === id)
+      if (handle && layer) return { layer, handle }
     }
     return null
   }
@@ -184,7 +189,7 @@ export const CanvasPane = () => {
 
     const onHandle = handleAt(point)
     if (onHandle) {
-      const pivot = centreOf(layerCanvasBBox(onHandle.layer))
+      const pivot = layerFrame(onHandle.layer).centre
       drag.current =
         onHandle.handle === 'rotate'
           ? {
@@ -325,12 +330,38 @@ export const CanvasPane = () => {
           }}
         >
           <canvas ref={canvasRef} className="block h-full w-full" />
-          <SelectionOverlay selected={selectedBoxes} hover={hoverBox} ptsPerPixel={ptsPerPixel} />
+          <SelectionOverlay
+            selected={selectedFrames}
+            hover={hoverFrame}
+            ptsPerPixel={ptsPerPixel}
+          />
         </div>
         {doc.groups.length === 0 && (
-          <p className="pointer-events-none absolute text-[13px] text-muted-foreground">
-            Import SVG files to start
-          </p>
+          <div className="pointer-events-none absolute flex flex-col items-center gap-1 rounded-xl border bg-background/95 px-8 py-6 text-center shadow-lg shadow-black/10">
+            <FileUp
+              className="mb-2 size-10 text-muted-foreground/40"
+              strokeWidth={1.25}
+              aria-hidden="true"
+            />
+            <p className="text-[14px] text-foreground">
+              <Button
+                variant="link"
+                className="pointer-events-auto h-auto p-0 text-[14px]"
+                onClick={openImportPicker}
+              >
+                Import
+              </Button>{' '}
+              or drag-and-drop SVG files here to start
+            </p>
+            <p className="text-muted-foreground">or</p>
+            <Button
+              variant="link"
+              className="pointer-events-auto h-auto p-0 text-[13px]"
+              onClick={() => void loadExample(useEditor.getState())}
+            >
+              Load an example
+            </Button>
+          </div>
         )}
       </div>
     </div>

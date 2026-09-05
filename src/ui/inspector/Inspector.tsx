@@ -18,13 +18,13 @@ const AppearanceSwitch = () => {
   const appearance = useEditor((s) => s.view.appearance)
   const setView = useEditor((s) => s.setView)
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1.5 border-b px-3">
+    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b px-3">
       <Tabs
         value={appearance}
         onValueChange={(value) => setView({ appearance: value as Appearance })}
         className="min-w-0 flex-1"
       >
-        <TabsList className="h-7 w-full flex-1">
+        <TabsList className="w-full flex-1">
           {APPEARANCE_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
               {tab.label}

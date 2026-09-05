@@ -4,12 +4,11 @@ import type { Appearance, BlendMode, Fill, Layer, LayerOverride } from '@/core/m
 import { useEditor } from '@/state'
 import { ColorField } from '../lib/ColorField'
 import { alphaOf, grayColor, grayLevel, toGrayColor, toSrgbColor, withAlpha } from '../lib/color'
-import { Field, Section } from '../lib/Field'
+import { Field, Section, SwitchRow } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
 import { BLEND_MODE_OPTIONS } from '../lib/options'
 import { type Option, Select } from '../lib/Select'
 import { Slider } from '../lib/Slider'
-import { Toggle } from '../lib/Toggle'
 
 type FillKind = 'inherit' | 'solid' | 'gray'
 const FILL_OPTIONS: readonly Option<FillKind>[] = [
@@ -114,13 +113,12 @@ export const LayerOverrides = ({
         />
       ) : null}
 
-      <Field label="Opacity">
-        <Toggle
-          label="Override opacity"
-          checked={override.opacity !== undefined}
-          onChange={(on) => set({ opacity: on ? layer.opacity : undefined })}
-        />
-      </Field>
+      <SwitchRow
+        label="Opacity"
+        name="Override opacity"
+        checked={override.opacity !== undefined}
+        onChange={(on) => set({ opacity: on ? layer.opacity : undefined })}
+      />
       {override.opacity !== undefined ? (
         <Slider
           label="Opacity"

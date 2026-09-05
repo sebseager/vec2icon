@@ -2,9 +2,8 @@
 import { setDocFill as setDocFillOp } from '@/core/model/ops'
 import type { Fill, IconDoc } from '@/core/model/types'
 import { useEditor } from '@/state'
-import { Field, Section } from '../lib/Field'
+import { Section, SwitchRow } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
-import { Toggle } from '../lib/Toggle'
 import { FillEditor } from './FillEditor'
 
 /** The IC2-only features this document leans on, in the words the inspector uses. */
@@ -51,13 +50,12 @@ export const DocInspector = () => {
       </Section>
 
       <Section title="Dark fill">
-        <Field label="Same as Default">
-          <Toggle
-            label="Dark fill same as Default"
-            checked={doc.fill.dark === undefined}
-            onChange={(same) => setDocFill('dark', same ? undefined : { ...doc.fill.default })}
-          />
-        </Field>
+        <SwitchRow
+          label="Same as Default"
+          name="Dark fill same as Default"
+          checked={doc.fill.dark === undefined}
+          onChange={(same) => setDocFill('dark', same ? undefined : { ...doc.fill.default })}
+        />
         {doc.fill.dark ? (
           <FillEditor
             label="Dark fill"
@@ -69,13 +67,17 @@ export const DocInspector = () => {
       </Section>
 
       <Section title="Platforms">
-        <Field label="watchOS">
-          <Toggle label="watchOS" checked={doc.watchOS} onChange={setWatchOS} />
-          <HelpTip topic="watchOS">
-            Adds the circular watchOS shape to the bundle's supported platforms. iOS and macOS use
-            the rounded square and are always included.
-          </HelpTip>
-        </Field>
+        <SwitchRow
+          label="watchOS"
+          help={
+            <HelpTip topic="watchOS">
+              Adds the circular watchOS shape to the bundle's supported platforms. iOS and macOS use
+              the rounded square and are always included.
+            </HelpTip>
+          }
+          checked={doc.watchOS}
+          onChange={setWatchOS}
+        />
       </Section>
 
       <Section title="Compatibility">

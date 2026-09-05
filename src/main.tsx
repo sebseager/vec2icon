@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { emptyDoc } from '@/core/model/defaults'
 import { clearAutosave, handleEditorKey, loadAutosave, startAutosave, useEditor } from '@/state'
 import App from './ui/App'
-import { ThemeProvider } from './ui/theme/ThemeProvider'
+import { startsDark, ThemeProvider } from './ui/theme/ThemeProvider'
 import './index.css'
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Root element not found')
+
+// The wallpaper defaults to the theme's own tone, decided before the first paint.
+useEditor.getState().setView({ wallpaper: startsDark() ? 'dark' : 'light' })
 
 createRoot(container).render(
   <StrictMode>
