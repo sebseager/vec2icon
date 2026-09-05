@@ -339,10 +339,12 @@ uniform sampler2D uSdf;
 uniform vec4 uPlateColor;
 uniform vec4 uRimColor;
 uniform float uSdfSpread;
+uniform float uSdfMargin;
 uniform float uRimWidth;
 
 void main() {
-  float d = (texture(uSdf, vUv).r * 2.0 - 1.0) * uSdfSpread;
+  vec2 sdfUv = (vUv + uSdfMargin) / (1.0 + 2.0 * uSdfMargin);
+  float d = (texture(uSdf, sdfUv).r * 2.0 - 1.0) * uSdfSpread;
   float coverage = 1.0 - smoothstep(-0.5, 0.5, d);
   float rim = (1.0 - smoothstep(0.0, uRimWidth, abs(d + uRimWidth * 0.5))) * coverage;
 
@@ -363,13 +365,16 @@ uniform sampler2D uScene;
 uniform sampler2D uBackdrop;
 uniform sampler2D uSdf;
 uniform float uSdfSpread;
+uniform float uSdfMargin;
 uniform float uFeather;
 uniform float uTransparent;
 
 void main() {
   vec4 scene = texture(uScene, vUv);
   vec4 backdrop = texture(uBackdrop, vUv);
-  float d = (texture(uSdf, vUv).r * 2.0 - 1.0) * uSdfSpread;
+  // the SDF texture covers the canvas plus a margin, so its edge never clamps
+  vec2 sdfUv = (vUv + uSdfMargin) / (1.0 + 2.0 * uSdfMargin);
+  float d = (texture(uSdf, sdfUv).r * 2.0 - 1.0) * uSdfSpread;
   float coverage = 1.0 - smoothstep(-uFeather, uFeather, d);
   if (uTransparent > 0.5) {
     // scene is premultiplied, so masking is a straight multiply on all four channels

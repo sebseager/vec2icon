@@ -59,6 +59,9 @@ const LIGHT_ELEVATION = 0.7
 /** Signed-distance texture resolution and the range it encodes, in its own texels. */
 const SDF_SIZE = 256
 const SDF_SPREAD = 6
+/** Canvas fraction the SDF texture extends past each edge, so a mask that touches the
+ * canvas boundary is never sampled at a clamped border texel. Wider than the spread. */
+const SDF_MARGIN = 8 / SDF_SIZE
 /** Rim drawn just inside the plate edge, in canvas points. */
 const PLATE_RIM_WIDTH = 3
 const MAX_LAYER_TEXTURES = 64
@@ -93,7 +96,7 @@ const gradientEndpoints = (angle: number): { p0: [number, number]; p1: [number, 
 
 /** Signed distance packed into R8: 0.5 is the outline, +/-SDF_SPREAD the range. */
 const sdfBytes = (platform: Platform): Uint8Array => {
-  const field = sdfTexture(platform, SDF_SIZE)
+  const field = sdfTexture(platform, SDF_SIZE, SDF_MARGIN)
   const bytes = new Uint8Array(field.length)
   for (let i = 0; i < field.length; i++) {
     const normalized = (field[i] as number) / SDF_SPREAD / 2 + 0.5
@@ -473,6 +476,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       uPlateColor: PLATES[plate].body,
       uRimColor: PLATES[plate].rim,
       uSdfSpread: (SDF_SPREAD * renderSize) / SDF_SIZE,
+      uSdfMargin: SDF_MARGIN,
       uRimWidth: PLATE_RIM_WIDTH * scale,
     })
     drawFullscreenTriangle(gl)
@@ -762,6 +766,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     bindTextures(gl, program, { uScene: scene, uBackdrop: backdrop, uSdf: sdf })
     setUniforms(gl, program, {
       uSdfSpread: (SDF_SPREAD * size) / SDF_SIZE,
+      uSdfMargin: SDF_MARGIN,
       uFeather: 0.5,
       uTransparent: transparent ? 1 : 0,
     })

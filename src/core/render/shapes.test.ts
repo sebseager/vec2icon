@@ -167,6 +167,23 @@ describe('sdfTexture', () => {
     }
   })
 
+  it('keeps the shape edge away from the texture border when given a margin', () => {
+    // Without a margin the last column sits half a texel inside the iOS mask, so a
+    // renderer that clamps at the border can never see the edge itself. With one, the
+    // border column is outside the shape and the edge lands inside the texture.
+    const flush = sdfTexture('ios', size)
+    expect(at(flush, size - 1, size / 2)).toBeLessThan(0)
+    const margin = 1 / 8
+    const padded = sdfTexture('ios', size, margin)
+    expect(at(padded, size - 1, size / 2)).toBeGreaterThan(0)
+    expect(at(padded, 0, size / 2)).toBeGreaterThan(0)
+    // the texel whose centre maps onto the shape edge reads (close to) zero
+    const edgeTexel = Math.round((size + margin * size) / (1 + 2 * margin) - 0.5)
+    expect(Math.abs(at(padded, edgeTexel, size / 2))).toBeLessThan(1)
+    // distances stay in shape units: the centre is as deep inside as before
+    expect(at(padded, size / 2, size / 2)).toBeCloseTo(at(flush, size / 2, size / 2), 0)
+  })
+
   it('is near zero at an edge midpoint of the iOS shape', () => {
     const t = sdfTexture('ios', size)
     expect(Math.abs(at(t, size / 2, 0))).toBeLessThan(1.5)

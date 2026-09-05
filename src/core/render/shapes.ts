@@ -144,15 +144,25 @@ const distanceToSegment = (
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy))
 }
 
-/** Signed distance in texture pixels, negative inside, one sample per pixel centre. */
-export const sdfTexture = (platform: Platform, size: number): Float32Array => {
+/**
+ * Signed distance in shape pixels, negative inside, one sample per texel centre.
+ *
+ * The shape sits in a `size` box; the texture covers that box widened by `margin`
+ * (a fraction of `size`) on every side. Without the margin an iOS or watchOS mask
+ * lies exactly on the texture border, and a sampler that clamps there can only ever
+ * see the half-texel-inside value, so the outline hugs the canvas edge and breaks
+ * away with a kink where the curve leaves it.
+ */
+export const sdfTexture = (platform: Platform, size: number, margin = 0): Float32Array => {
   const polygon = platformPolygon(platform, size)
   const count = polygon.length
   const out = new Float32Array(size * size)
+  const texel = 1 + 2 * margin
+  const origin = -margin * size
   for (let y = 0; y < size; y++) {
-    const py = y + 0.5
+    const py = origin + (y + 0.5) * texel
     for (let x = 0; x < size; x++) {
-      const px = x + 0.5
+      const px = origin + (x + 0.5) * texel
       let distance = Number.POSITIVE_INFINITY
       let inside = false
       for (let i = 0, j = count - 1; i < count; j = i++) {
