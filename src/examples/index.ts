@@ -51,7 +51,7 @@ export const loadExampleDoc = async (opts?: { measurer?: Measurer }): Promise<Ic
     colors: [srgb(0.99, 0.6, 0.34), srgb(1, 0.82, 0.58)],
     angle: 0,
   })
-  doc = setDocFill(doc, 'dark', { kind: 'solid', color: srgb(0.1, 0.14, 0.49) })
+  doc = setDocFill(doc, 'dark', { kind: 'solid', color: srgb(0x2e / 255, 0x33 / 255, 0x56 / 255) })
   doc = setWatchOS(doc, true)
 
   // The sun is one piece of glass that bends what sits behind it.

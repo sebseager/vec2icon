@@ -194,4 +194,12 @@ describe('handleEditorKey', () => {
     const handled = handleEditorKey(key('a'), useEditor.getState())
     expect(handled).toBe(false)
   })
+
+  it('selects every layer on Cmd/Ctrl+A', () => {
+    const state = useEditor.getState()
+    expect(handleEditorKey(key('a', { metaKey: true }), state)).toBe(true)
+    const ids = state.doc.groups.flatMap((g) => g.layers.map((l) => l.id))
+    expect(useEditor.getState().selection.layerIds).toEqual(ids)
+    expect(useEditor.getState().selection.groupId).toBeNull()
+  })
 })

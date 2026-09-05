@@ -8,9 +8,11 @@ import {
   isDrawableBitmap,
   layerRenderSvg,
   peekRaster,
+  rasterBaseKey,
   rasterCacheKey,
   rasterizeLayer,
   reserveRasterCache,
+  staleSourceMatrix,
 } from './raster'
 
 const srgb = (r: number, g: number, b: number, a = 1): Color => ({
@@ -183,6 +185,37 @@ describe('rasterCacheKey', () => {
     const a = rasterCacheKey(layerOf(), resolved(), 1024)
     const b = rasterCacheKey(layerOf(), resolved(), 512)
     expect(a).not.toBe(b)
+  })
+})
+
+describe('rasterBaseKey', () => {
+  it('ignores where the layer sits', () => {
+    const a = rasterBaseKey(layerOf(), resolved(), 1024)
+    const b = rasterBaseKey(
+      layerOf({ transform: { x: 40, y: -10, scaleX: 2, scaleY: 2, rotation: 30 } }),
+      resolved(),
+      1024,
+    )
+    expect(a).toBe(b)
+  })
+
+  it('still changes with markup, appearance and size', () => {
+    const a = rasterBaseKey(layerOf(), resolved(), 1024)
+    expect(rasterBaseKey(layerOf({ svg: '<g><circle r="1"/></g>' }), resolved(), 1024)).not.toBe(a)
+    expect(rasterBaseKey(layerOf(), resolved(), 2048)).not.toBe(a)
+  })
+})
+
+describe('staleSourceMatrix', () => {
+  it('maps a point of the moved layer back to where the old raster drew it', () => {
+    const before = layerOf()
+    const after = layerOf({ transform: { x: 100, y: 50, scaleX: 1, scaleY: 1, rotation: 0 } })
+    const m = staleSourceMatrix(layerMatrix(before), layerMatrix(after))
+    // the layer's pivot moved by (100, 50): the new pivot samples the old pivot
+    expect(m.e).toBeCloseTo(-100)
+    expect(m.f).toBeCloseTo(-50)
+    expect(m.a).toBeCloseTo(1)
+    expect(m.d).toBeCloseTo(1)
   })
 })
 

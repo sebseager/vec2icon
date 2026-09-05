@@ -70,6 +70,10 @@ export const handleEditorKey = (e: EditorKeyEvent, s: EditorState): boolean => {
     }
     return true
   }
+  if (isMod(e) && lowerKey(e) === 'a') {
+    s.select(s.doc.groups.flatMap((g) => g.layers.map((l) => l.id)))
+    return true
+  }
   if (isMod(e) && lowerKey(e) === 'd') {
     s.duplicateLayers(s.selection.layerIds)
     return true

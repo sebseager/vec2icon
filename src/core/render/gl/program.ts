@@ -80,7 +80,8 @@ export const setUniforms = (
     if (typeof value === 'number') {
       gl.uniform1f(location, value)
     } else if (Array.isArray(value)) {
-      if (value.length === 2) gl.uniform2f(location, value[0] as number, value[1] as number)
+      if (value.length === 9) gl.uniformMatrix3fv(location, false, new Float32Array(value))
+      else if (value.length === 2) gl.uniform2f(location, value[0] as number, value[1] as number)
       else if (value.length === 3)
         gl.uniform3f(location, value[0] as number, value[1] as number, value[2] as number)
       else if (value.length === 4)

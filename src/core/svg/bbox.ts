@@ -13,8 +13,12 @@ export type Measurer = (svg: string, defs: string, viewBox: ViewBox) => BBox | n
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+/** The fragment goes inside one more `<g>`: `getBBox` reports an element in its own
+ * user space, ignoring that element's `transform`, so measuring a layer whose wrapper
+ * carries a transform (a nested `<svg>` lifted into a layer) would give the box in the
+ * wrong space. The outer group has no transform, so its box includes every child's. */
 const wrap = (svg: string, defs: string, viewBox: ViewBox): string =>
-  `<svg xmlns="${SVG_NS}" viewBox="${viewBox.join(' ')}"><defs>${defs}</defs>${svg}</svg>`
+  `<svg xmlns="${SVG_NS}" viewBox="${viewBox.join(' ')}"><defs>${defs}</defs><g>${svg}</g></svg>`
 
 const parseFragment = (markup: string): SVGSVGElement | null => {
   try {

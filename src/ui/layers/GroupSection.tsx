@@ -35,6 +35,7 @@ export const GroupSection = ({
 }) => {
   const selected = useEditor((s) => s.selection.groupId === group.id)
   const selectGroup = useEditor((s) => s.selectGroup)
+  const select = useEditor((s) => s.select)
   const updateGroup = useEditor((s) => s.updateGroup)
   const removeGroup = useEditor((s) => s.removeGroup)
   const [draft, setDraft] = useState<string | null>(null)
@@ -102,6 +103,13 @@ export const GroupSection = ({
             <MoreHorizontal size={14} aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-auto">
+            <DropdownMenuItem
+              className="text-xs"
+              disabled={group.layers.length === 0}
+              onClick={() => select(group.layers.map((l) => l.id))}
+            >
+              Select all layers
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-xs" onClick={() => setDraft(group.name)}>
               Rename
             </DropdownMenuItem>

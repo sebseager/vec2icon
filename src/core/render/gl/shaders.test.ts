@@ -81,9 +81,11 @@ describe('source uv flip', () => {
   it('is applied by every shader that samples a layer raster', () => {
     for (const src of [FRAG_COPY, FRAG_BLEND, FRAG_BLUR]) {
       expect(src).toContain('uniform float uFlipSource;')
-      expect(src).toContain(
-        'vec2 sourceUv() { return vec2(vUv.x, mix(vUv.y, 1.0 - vUv.y, uFlipSource)); }',
-      )
+      expect(src).toContain('vec2 uv = vec2(vUv.x, mix(vUv.y, 1.0 - vUv.y, uFlipSource));')
+      // an older raster can stand in for a moving layer: opt-in per draw, off by default
+      expect(src).toContain('uniform float uSourceWarp;')
+      expect(src).toContain('uniform mat3 uSourceMatrix;')
+      expect(src).toContain('if (uSourceWarp > 0.5) uv = (uSourceMatrix * vec3(uv, 1.0)).xy;')
       expect(src).toContain('sourceUv()')
     }
   })
@@ -103,7 +105,7 @@ describe('source uv flip', () => {
 describe('FRAG_COPY', () => {
   it('scales all four premultiplied channels by uAlpha', () => {
     expect(FRAG_COPY).toContain('uniform float uAlpha;')
-    expect(FRAG_COPY).toContain('texture(uSource, sourceUv()) * uAlpha')
+    expect(FRAG_COPY).toContain('texture(uSource, uv) * uAlpha * sourceInside(uv)')
   })
 })
 

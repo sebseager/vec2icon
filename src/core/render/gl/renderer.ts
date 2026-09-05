@@ -13,11 +13,19 @@
  */
 import type { ResolvedLayer } from '../../model/appearance'
 import { docFill, resolveLayer } from '../../model/appearance'
+import { layerMatrix, type Matrix } from '../../model/geometry'
 import type { Appearance, Color, Glass, Group, IconDoc, Layer, Platform } from '../../model/types'
 import { CANVAS_SIZE } from '../../model/types'
 import { automaticGradientStops, linearGradientVector, wallpaperStops } from '../gradient'
 import { monoColor } from '../luminance'
-import { rasterCacheKey, rasterizeLayer, rasterSizeFor, reserveRasterCache } from '../raster'
+import {
+  latestRaster,
+  rasterCacheKey,
+  rasterizeLayer,
+  rasterSizeFor,
+  reserveRasterCache,
+  staleSourceMatrix,
+} from '../raster'
 import type { Plate } from '../rendition'
 import { renditionPlan } from '../rendition'
 import { sdfTexture } from '../shapes'
@@ -232,7 +240,38 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     bindTarget(target, renderSize)
     blending(over)
     bindTextures(gl, program, { uSource: source })
-    setUniforms(gl, program, { uFlipSource: flip, uAlpha: alpha })
+    setUniforms(gl, program, { uFlipSource: flip, uAlpha: alpha, uSourceWarp: 0 })
+    drawFullscreenTriangle(gl)
+  }
+
+  /** Column-major mat3 of a canvas-point matrix, with its translation normalised to uv. */
+  const uvMatrix = (m: Matrix): number[] => [
+    m.a,
+    m.b,
+    0,
+    m.c,
+    m.d,
+    0,
+    m.e / CANVAS_SIZE,
+    m.f / CANVAS_SIZE,
+    1,
+  ]
+
+  /**
+   * Redraw a layer raster into `target` with every sample looked up through `source`,
+   * keeping the y-down layout of a layer texture so the result can be used as one.
+   */
+  const drawWarped = (target: RenderTarget, raster: WebGLTexture, source: Matrix): void => {
+    const program = activate(programs.copy)
+    bindTarget(target, renderSize)
+    blending(false)
+    bindTextures(gl, program, { uSource: raster })
+    setUniforms(gl, program, {
+      uFlipSource: 0,
+      uAlpha: 1,
+      uSourceWarp: 1,
+      uSourceMatrix: uvMatrix(source),
+    })
     drawFullscreenTriangle(gl)
   }
 
@@ -307,11 +346,17 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     return texture
   }
 
-  /** The layer's raster, kicking off rasterization and a redraw when missing. */
+  /**
+   * The layer's raster, kicking off rasterization and a redraw when missing. While
+   * that is in flight, the newest raster of the same layer at any older transform is
+   * redrawn into a borrowed target at the current one, so a layer being dragged never
+   * blinks out; the caller releases whatever lands in `borrowed` once it is done.
+   */
   const layerTexture = (
     layer: Layer,
     resolved: ResolvedLayer,
     rasterSize: number,
+    borrowed: RenderTarget[],
   ): WebGLTexture | null => {
     const key = rasterCacheKey(layer, resolved, rasterSize)
     const existing = layerTextures.get(key)
@@ -319,6 +364,17 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       layerTextures.delete(key)
       layerTextures.set(key, existing)
       return existing
+    }
+    let standIn: WebGLTexture | null = null
+    const stale = latestRaster(layer, resolved, rasterSize)
+    const old = stale ? layerTextures.get(stale.key) : undefined
+    if (stale && old) {
+      const target = pool.acquire()
+      if (target) {
+        drawWarped(target, old, staleSourceMatrix(stale.matrix, layerMatrix(layer)))
+        borrowed.push(target)
+        standIn = target.texture
+      }
     }
     if (!pending.has(key)) {
       pending.add(key)
@@ -338,7 +394,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
           pending.delete(key)
         })
     }
-    return null
+    return standIn
   }
 
   /** Resolve and upload every raster the document needs, for a complete export. */
@@ -606,10 +662,11 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
 
     const bottomToTop = [...group.layers].reverse()
     const glassLayers: WebGLTexture[] = []
+    const borrowed: RenderTarget[] = []
     for (const layer of bottomToTop) {
       const resolved = resolveLayer(layer, appearance)
       if (resolved.hidden || resolved.opacity <= 0) continue
-      const texture = layerTexture(layer, resolved, rasterSize)
+      const texture = layerTexture(layer, resolved, rasterSize, borrowed)
       if (!texture) continue
       color = compositeOver(
         color,
@@ -647,7 +704,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         blurInto(blurAlpha, scratch, glassMask.texture, blurRadius)
       }
     }
-    pool.release(scratch)
+    pool.release(scratch, ...borrowed)
     return { color, glassMask, blurAlpha }
   }
 

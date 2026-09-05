@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ViewBox } from '../model/types'
-import { domMeasurer, type Measurer, measureBBox, pureMeasurer, setDefaultMeasurer } from './bbox'
+import {
+  domMeasurer,
+  elementBBox,
+  type Measurer,
+  measureBBox,
+  pureMeasurer,
+  setDefaultMeasurer,
+} from './bbox'
 
 const VB: ViewBox = [0, 0, 100, 100]
 const measure = (svg: string, viewBox: ViewBox = VB) => pureMeasurer(svg, '', viewBox)
@@ -149,6 +156,38 @@ describe('pureMeasurer', () => {
 })
 
 describe('domMeasurer', () => {
+  it('includes a transform carried by the layer wrapper', () => {
+    // Stand in for the browser: per spec, getBBox reports an element in its own user
+    // space, so it includes the children's transforms but never the element's own.
+    const proto = SVGGElement.prototype as unknown as { getBBox?: () => DOMRect }
+    const original = proto.getBBox
+    proto.getBBox = function (this: Element) {
+      let box: ReturnType<typeof elementBBox> = null
+      for (const child of Array.from(this.children)) {
+        const b = elementBBox(child)
+        if (!b) continue
+        box = box
+          ? {
+              x: Math.min(box.x, b.x),
+              y: Math.min(box.y, b.y),
+              width: Math.max(box.x + box.width, b.x + b.width) - Math.min(box.x, b.x),
+              height: Math.max(box.y + box.height, b.y + b.height) - Math.min(box.y, b.y),
+            }
+          : b
+      }
+      return (box ?? { x: 0, y: 0, width: 0, height: 0 }) as DOMRect
+    }
+    try {
+      // a nested-svg layer: the wrapper scales its 0..360 art onto a 332..692 box
+      const svg = '<g transform="matrix(1 0 0 1 332 150)"><circle cx="180" cy="180" r="100"/></g>'
+      const box = domMeasurer(svg, '', [0, 0, 1024, 1024])
+      expect(box).toEqual({ x: 412, y: 230, width: 200, height: 200 })
+    } finally {
+      if (original) proto.getBBox = original
+      else delete proto.getBBox
+    }
+  })
+
   it('returns null under happy-dom, where getBBox reports nothing', () => {
     expect(domMeasurer('<g><rect width="10" height="10"/></g>', '', VB)).toBeNull()
   })

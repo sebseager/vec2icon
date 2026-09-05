@@ -46,8 +46,24 @@ out vec4 outColor;
  */
 const SOURCE_UV_CHUNK = `
 uniform float uFlipSource;
+// With uSourceWarp set, the (canvas-normalised) sample point is mapped through
+// uSourceMatrix first, so a raster drawn at an older transform can stand in for the
+// layer at its current one. Uniforms default to zero, so programs that never set
+// uSourceWarp sample straight through.
+uniform float uSourceWarp;
+uniform mat3 uSourceMatrix;
 
-vec2 sourceUv() { return vec2(vUv.x, mix(vUv.y, 1.0 - vUv.y, uFlipSource)); }
+vec2 sourceUv() {
+  vec2 uv = vec2(vUv.x, mix(vUv.y, 1.0 - vUv.y, uFlipSource));
+  if (uSourceWarp > 0.5) uv = (uSourceMatrix * vec3(uv, 1.0)).xy;
+  return uv;
+}
+
+// Zero outside the source when warping, so clamp-to-edge never smears its border.
+float sourceInside(vec2 uv) {
+  if (uSourceWarp < 0.5) return 1.0;
+  return step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+}
 `
 
 /** JS mirror of `sourceUv()`, so the convention can be unit tested. */
@@ -395,6 +411,7 @@ ${SOURCE_UV_CHUNK}
 uniform sampler2D uSource;
 uniform float uAlpha;
 void main() {
-  outColor = texture(uSource, sourceUv()) * uAlpha;
+  vec2 uv = sourceUv();
+  outColor = texture(uSource, uv) * uAlpha * sourceInside(uv);
 }
 `

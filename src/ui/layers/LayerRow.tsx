@@ -9,6 +9,9 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Input } from '@/components/ui/input'
@@ -35,6 +38,7 @@ export const LayerRow = ({
 }) => {
   const selection = useEditor((s) => s.selection)
   const select = useEditor((s) => s.select)
+  const groups = useEditor((s) => s.doc.groups)
   const updateLayer = useEditor((s) => s.updateLayer)
   const [draft, setDraft] = useState<string | null>(null)
 
@@ -61,6 +65,32 @@ export const LayerRow = ({
   const onNameKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') commitName()
     else if (e.key === 'Escape') setDraft(null)
+  }
+
+  /** Plain click selects; Cmd/Ctrl toggles this row; Shift extends from the anchor,
+   * the first-selected row, across the panel's order. */
+  const onNameClick = (e: MouseEvent): void => {
+    if (e.metaKey || e.ctrlKey) {
+      select(
+        selected
+          ? selection.layerIds.filter((id) => id !== layer.id)
+          : [...selection.layerIds, layer.id],
+      )
+      return
+    }
+    if (e.shiftKey && selection.layerIds.length > 0) {
+      const order = groups.flatMap((g) => g.layers.map((l) => l.id))
+      const anchor = selection.layerIds[0] as string
+      const from = order.indexOf(anchor)
+      const to = order.indexOf(layer.id)
+      if (from >= 0 && to >= 0) {
+        const [lo, hi] = from < to ? [from, to] : [to, from]
+        const range = order.slice(lo, hi + 1).filter((id) => id !== anchor)
+        select([anchor, ...range])
+        return
+      }
+    }
+    select([layer.id])
   }
 
   const run = (fn: () => void) => (): void => {
@@ -123,7 +153,7 @@ export const LayerRow = ({
               type="button"
               data-testid="layer-name"
               className={`min-w-0 flex-1 truncate px-1 text-left ${layer.hidden ? 'text-muted-foreground' : ''}`}
-              onClick={(e: MouseEvent) => select([layer.id], { additive: e.shiftKey })}
+              onClick={onNameClick}
               onDoubleClick={() => setDraft(layer.name)}
             >
               {layer.name}
@@ -181,6 +211,27 @@ export const LayerRow = ({
           >
             Move to new group
           </ContextMenuItem>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger className="text-xs" disabled={groups.length < 2}>
+              Move to group
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {groups
+                .filter((g) => g.id !== groupId)
+                .map((g) => (
+                  <ContextMenuItem
+                    key={g.id}
+                    className="text-xs"
+                    onClick={run(() => {
+                      const state = useEditor.getState()
+                      for (const id of ids) state.moveLayer(id, g.id, 0)
+                    })}
+                  >
+                    {g.name}
+                  </ContextMenuItem>
+                ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
           <ContextMenuItem
             className="text-xs"
             onClick={() => useEditor.getState().ungroup(groupId)}

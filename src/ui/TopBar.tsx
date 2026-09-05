@@ -86,36 +86,38 @@ export const TopBar = () => {
 
       <div className="flex-1" />
 
-      <IconButton label="Undo" title="Undo — Cmd/Ctrl+Z" disabled={!canUndo} onClick={undo}>
-        <Undo2 size={15} aria-hidden="true" />
-      </IconButton>
-      <IconButton label="Redo" title="Redo — Shift+Cmd/Ctrl+Z" disabled={!canRedo} onClick={redo}>
-        <Redo2 size={15} aria-hidden="true" />
-      </IconButton>
+      <div className="flex items-center gap-2">
+        <IconButton label="Undo" title="Undo — Cmd/Ctrl+Z" disabled={!canUndo} onClick={undo}>
+          <Undo2 size={15} aria-hidden="true" />
+        </IconButton>
+        <IconButton label="Redo" title="Redo — Shift+Cmd/Ctrl+Z" disabled={!canRedo} onClick={redo}>
+          <Redo2 size={15} aria-hidden="true" />
+        </IconButton>
 
-      <input
-        ref={registerImportInput}
-        type="file"
-        multiple
-        accept=".svg,.svgz"
-        className="hidden"
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
-          e.target.value = ''
-          void importFiles(files, useEditor.getState())
-        }}
-      />
-      <Button variant="outline" size="sm" onClick={openImportPicker}>
-        <Upload data-icon="inline-start" aria-hidden="true" />
-        Import
-      </Button>
-      <Button size="sm" onClick={() => setView({ exportOpen: true })}>
-        <Download data-icon="inline-start" aria-hidden="true" />
-        Export
-      </Button>
+        <input
+          ref={registerImportInput}
+          type="file"
+          multiple
+          accept=".svg,.svgz"
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? [])
+            e.target.value = ''
+            void importFiles(files, useEditor.getState())
+          }}
+        />
+        <Button variant="outline" size="sm" onClick={openImportPicker}>
+          <Upload data-icon="inline-start" aria-hidden="true" />
+          Import
+        </Button>
+        <Button size="sm" onClick={() => setView({ exportOpen: true })}>
+          <Download data-icon="inline-start" aria-hidden="true" />
+          Export
+        </Button>
 
-      <IssuesPanel />
-      <AppMenu />
+        <IssuesPanel />
+        <AppMenu />
+      </div>
     </header>
   )
 }

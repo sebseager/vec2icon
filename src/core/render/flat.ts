@@ -5,13 +5,16 @@
  */
 import type { ResolvedLayer } from '../model/appearance'
 import { docFill, resolveLayer } from '../model/appearance'
+import { invert, layerMatrix, type Matrix, multiply } from '../model/geometry'
 import type { BlendMode, Color, IconDoc, Layer } from '../model/types'
 import { CANVAS_SIZE } from '../model/types'
 import { automaticGradientStops, linearGradientVector, wallpaperStops } from './gradient'
 import { monoColor } from './luminance'
 import {
   isDrawableBitmap,
+  latestRaster,
   peekRaster,
+  peekRasterByKey,
   rasterCacheKey,
   rasterizeLayer,
   rasterSizeFor,
@@ -166,15 +169,25 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
     })
   }
 
-  /** The layer's raster if it is ready, otherwise null after starting the work. */
+  /**
+   * The layer's raster if it is ready. Otherwise the work is started and, while it
+   * runs, the newest raster of the same layer at an older transform stands in, with
+   * the matrix that carries it to the current one; null when there is nothing yet.
+   */
   const bitmapFor = (
     layer: Layer,
     resolved: ResolvedLayer,
     rasterSize: number,
-  ): ImageBitmap | null => {
+  ): { bitmap: ImageBitmap; delta: Matrix | null } | null => {
     const ready = peekRaster(layer, resolved, rasterSize)
-    if (ready) return ready
+    if (ready) return { bitmap: ready, delta: null }
     const key = rasterCacheKey(layer, resolved, rasterSize)
+    let standIn: { bitmap: ImageBitmap; delta: Matrix | null } | null = null
+    const stale = latestRaster(layer, resolved, rasterSize)
+    const old = stale ? peekRasterByKey(stale.key) : null
+    if (stale && old) {
+      standIn = { bitmap: old, delta: multiply(layerMatrix(layer), invert(stale.matrix)) }
+    }
     if (!pending.has(key)) {
       pending.add(key)
       rasterizeLayer(layer, resolved, rasterSize)
@@ -188,7 +201,7 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
           pending.delete(key)
         })
     }
-    return null
+    return standIn
   }
 
   /**
@@ -261,8 +274,9 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
       for (const layer of [...group.layers].reverse()) {
         const resolved = resolveLayer(layer, plan.appearance)
         if (resolved.hidden || resolved.opacity <= 0) continue
-        const bitmap = bitmapFor(layer, resolved, rasterSize)
-        if (!bitmap || !isDrawableBitmap(bitmap)) continue
+        const raster = bitmapFor(layer, resolved, rasterSize)
+        if (!raster || !isDrawableBitmap(raster.bitmap)) continue
+        const { bitmap, delta } = raster
 
         ctx.save()
         ctx.globalAlpha = resolved.opacity * group.opacity
@@ -288,6 +302,10 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
             )
             recolor.ctx.fillRect(0, 0, size, size)
             source = recolor.canvas
+          }
+          if (delta) {
+            // an older raster standing in: carry it to where the layer is now
+            ctx.transform(delta.a, delta.b, delta.c, delta.d, delta.e * scale, delta.f * scale)
           }
           ctx.drawImage(source, 0, 0, size, size)
         } catch {

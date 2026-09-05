@@ -6,7 +6,7 @@
  */
 import type { ResolvedLayer } from '../model/appearance'
 import { appearanceCacheKey } from '../model/appearance'
-import { layerMatrix, matrixToSvg } from '../model/geometry'
+import { invert, layerMatrix, type Matrix, matrixToSvg, multiply } from '../model/geometry'
 import type { Color, Fill, Layer } from '../model/types'
 import { CANVAS_SIZE } from '../model/types'
 import { automaticGradientStops, linearGradientVector } from './gradient'
@@ -124,6 +124,20 @@ export const rasterCacheKey = (layer: Layer, resolved: ResolvedLayer, size: numb
   return `${fnv1a(joined)}${fnv1a(`${joined.length}${joined}`)}`
 }
 
+/** Cache key over everything but where the layer sits: the same markup and appearance
+ * at any transform share one base key, so a raster drawn at an older transform can
+ * stand in while the exact one is still being drawn. */
+export const rasterBaseKey = (layer: Layer, resolved: ResolvedLayer, size: number): string => {
+  const joined = [layer.svg, layer.defs, appearanceCacheKey(resolved), String(size)].join(' ')
+  return `${fnv1a(joined)}${fnv1a(`${joined.length}${joined}`)}`
+}
+
+/**
+ * Where a canvas point of the layer placed at `now` fell in a raster drawn while it
+ * was placed at `then`: sample the old raster there to show the layer in its new place.
+ */
+export const staleSourceMatrix = (then: Matrix, now: Matrix): Matrix => multiply(then, invert(now))
+
 type BitmapCanvas = {
   getContext(id: '2d'): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null
 }
@@ -193,6 +207,8 @@ export const isDrawableBitmap = (bitmap: ImageBitmap): boolean =>
 const cache = new Map<string, Promise<ImageBitmap>>()
 /** The subset of `cache` that has resolved, for synchronous `peekRaster` reads. */
 const settled = new Map<string, ImageBitmap>()
+/** The most recently settled raster per base key, and the matrix it was drawn at. */
+const latest = new Map<string, { key: string; matrix: Matrix }>()
 let reserved = 0
 
 /**
@@ -215,6 +231,7 @@ const forget = (key: string): void => {
   const entry = cache.get(key)
   cache.delete(key)
   settled.delete(key)
+  for (const [base, stale] of latest) if (stale.key === key) latest.delete(base)
   if (entry) closeLater(entry)
 }
 
@@ -245,8 +262,10 @@ export const peekRaster = (
   layer: Layer,
   resolved: ResolvedLayer,
   size: number,
-): ImageBitmap | null => {
-  const key = rasterCacheKey(layer, resolved, size)
+): ImageBitmap | null => peekRasterByKey(rasterCacheKey(layer, resolved, size))
+
+/** `peekRaster` for a key already in hand, such as one from `latestRaster`. */
+export const peekRasterByKey = (key: string): ImageBitmap | null => {
   const bitmap = settled.get(key)
   if (!bitmap) return null
   if (!isDrawableBitmap(bitmap)) {
@@ -257,6 +276,17 @@ export const peekRaster = (
   touch(key)
   return bitmap
 }
+
+/**
+ * The newest settled raster of this layer's markup and appearance at any transform,
+ * for drawing the layer while the raster at its current transform is still pending.
+ */
+export const latestRaster = (
+  layer: Layer,
+  resolved: ResolvedLayer,
+  size: number,
+): { key: string; matrix: Matrix } | null =>
+  latest.get(rasterBaseKey(layer, resolved, size)) ?? null
 
 /** Rasterize a layer at `size` px, memoized by `rasterCacheKey`. */
 export const rasterizeLayer = (
@@ -271,9 +301,13 @@ export const rasterizeLayer = (
     return hit
   }
   const entry = drawToBitmap(layerRenderSvg(layer, resolved), size)
+  const base = rasterBaseKey(layer, resolved, size)
+  const matrix = layerMatrix(layer)
   entry
     .then((bitmap) => {
-      if (cache.get(key) === entry) settled.set(key, bitmap)
+      if (cache.get(key) !== entry) return
+      settled.set(key, bitmap)
+      latest.set(base, { key, matrix })
     })
     .catch(() => {
       if (cache.get(key) === entry) {
