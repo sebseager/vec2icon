@@ -299,7 +299,7 @@ export const CanvasPane = () => {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-1 flex-col bg-white">
+    <div className="flex h-full min-w-0 flex-1 flex-col bg-background">
       <CanvasToolbar rendererKind={rendererKind} />
       <div
         ref={areaRef}
@@ -308,7 +308,7 @@ export const CanvasPane = () => {
         onPointerDown={(e) => {
           if (e.target === e.currentTarget && e.button === 0) clearSelection()
         }}
-        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-zinc-100"
+        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted"
       >
         <div
           ref={stageRef}
@@ -328,7 +328,7 @@ export const CanvasPane = () => {
           <SelectionOverlay selected={selectedBoxes} hover={hoverBox} ptsPerPixel={ptsPerPixel} />
         </div>
         {doc.groups.length === 0 && (
-          <p className="pointer-events-none absolute text-[13px] text-zinc-500">
+          <p className="pointer-events-none absolute text-[13px] text-muted-foreground">
             Import SVG files to start
           </p>
         )}

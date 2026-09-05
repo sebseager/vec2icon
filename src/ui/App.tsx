@@ -1,5 +1,6 @@
 /** Three panes under a top bar, with the whole window as a drop target. */
 import { useEffect, useState } from 'react'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { useEditor } from '@/state'
 import { CanvasPane } from './canvas/CanvasPane'
 import { ExportDialog } from './export/ExportDialog'
@@ -59,27 +60,29 @@ export default function App() {
   const draggingFiles = useFileDrop()
 
   return (
-    <div className="flex h-full min-w-[1024px] flex-col bg-zinc-100 text-[12px]">
-      <TopBar />
-      <div className="flex min-h-0 flex-1">
-        <LayersPanel />
-        <main aria-label="Canvas" className="flex min-w-0 flex-1">
-          <CanvasPane />
-        </main>
-        <Inspector />
-      </div>
-
-      <Toasts />
-      <HelpDialog />
-      <ExportDialog />
-
-      {draggingFiles ? (
-        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-white/80">
-          <p className="border border-accent border-dashed px-6 py-4 text-[14px] text-accent">
-            Drop SVG files
-          </p>
+    <TooltipProvider delay={150}>
+      <div className="flex h-full min-w-[1024px] flex-col bg-muted text-[12px]">
+        <TopBar />
+        <div className="flex min-h-0 flex-1">
+          <LayersPanel />
+          <main aria-label="Canvas" className="flex min-w-0 flex-1">
+            <CanvasPane />
+          </main>
+          <Inspector />
         </div>
-      ) : null}
-    </div>
+
+        <Toasts />
+        <HelpDialog />
+        <ExportDialog />
+
+        {draggingFiles ? (
+          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80">
+            <p className="rounded-lg border border-primary border-dashed px-6 py-4 text-[14px] text-primary">
+              Drop SVG files
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </TooltipProvider>
   )
 }

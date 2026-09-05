@@ -1,6 +1,7 @@
 /** Compact select. Native on purpose: a dense inspector wants the platform's own
  * keyboard handling and list virtualization, and it stays usable at 12px. */
 import type { ChangeEvent } from 'react'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
 export type Option<T extends string> = { value: T; label: string }
 
@@ -17,17 +18,18 @@ export const Select = <T extends string>({
   onChange: (value: T) => void
   disabled?: boolean
 }) => (
-  <select
+  <NativeSelect
+    size="sm"
+    className="min-w-0 flex-1 *:data-[slot=native-select]:h-6 *:data-[slot=native-select]:pl-1.5 *:data-[slot=native-select]:text-xs"
     aria-label={label}
     value={value}
     disabled={disabled}
     onChange={(e: ChangeEvent<HTMLSelectElement>) => onChange(e.target.value as T)}
-    className="h-6 min-w-0 flex-1 rounded-[3px] border border-zinc-300 bg-white px-1.5 text-[12px] text-zinc-800 disabled:text-zinc-400"
   >
     {options.map((option) => (
-      <option key={option.value} value={option.value}>
+      <NativeSelectOption key={option.value} value={option.value}>
         {option.label}
-      </option>
+      </NativeSelectOption>
     ))}
-  </select>
+  </NativeSelect>
 )

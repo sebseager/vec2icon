@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { emptyDoc } from '@/core/model/defaults'
 import { clearAutosave, handleEditorKey, loadAutosave, startAutosave, useEditor } from '@/state'
 import App from './ui/App'
+import { ThemeProvider } from './ui/theme/ThemeProvider'
 import './index.css'
 
 const container = document.getElementById('root')
@@ -10,7 +11,9 @@ if (!container) throw new Error('Root element not found')
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 )
 

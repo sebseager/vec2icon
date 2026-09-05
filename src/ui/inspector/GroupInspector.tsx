@@ -1,4 +1,5 @@
 /** Shown when a group is selected: the glass material the whole group shares. */
+import { Button } from '@/components/ui/button'
 import { setGlass as setGlassOp, updateGroup as updateGroupOp } from '@/core/model/ops'
 import type { BlendMode, Glass, Group } from '@/core/model/types'
 import { useEditor } from '@/state'
@@ -28,7 +29,7 @@ const SHADOW_OPTIONS: readonly Option<Glass['shadow']['kind']>[] = [
 ]
 
 const Ic2Tag = () => (
-  <span className="shrink-0 rounded-[3px] border border-zinc-300 px-1 text-[10px] text-zinc-500">
+  <span className="shrink-0 rounded-sm border px-1 text-[10px] text-muted-foreground">
     Xcode 27
   </span>
 )
@@ -94,13 +95,14 @@ export const GroupInspector = ({ group }: { group: Group }) => {
           />
           <Ic2Tag />
           {placement !== undefined ? (
-            <button
-              type="button"
-              className="shrink-0 text-zinc-500 hover:text-zinc-900"
+            <Button
+              variant="ghost"
+              size="xs"
+              className="shrink-0"
               onClick={() => setGlass(group.id, { specularPlacement: undefined })}
             >
               Clear
-            </button>
+            </Button>
           ) : null}
         </Field>
 

@@ -1,7 +1,11 @@
 /** Document identity on the left, the actions that leave the editor on the right. */
-import { Download, HelpCircle, Redo2, Undo2, Upload } from 'lucide-react'
+import { Download, Redo2, Undo2, Upload } from 'lucide-react'
 import { type KeyboardEvent, useRef, useState, useSyncExternalStore } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { useEditor } from '@/state'
+import { AppMenu } from './AppMenu'
 import { IssuesPanel } from './IssuesPanel'
 import { IconButton } from './lib/IconButton'
 import { importFiles } from './lib/importFiles'
@@ -37,31 +41,33 @@ const DocName = () => {
 
   if (draft === null) {
     return (
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         aria-label="Rename icon"
         title="Click to rename"
-        className="h-7 rounded-[3px] px-1.5 text-[13px] text-zinc-900 hover:bg-zinc-100"
+        className="text-[13px] font-normal"
         onClick={() => setDraft(name)}
       >
         {name}
-      </button>
+      </Button>
     )
   }
 
   return (
-    <input
-      // biome-ignore lint/a11y/noAutofocus: the field only exists once the name is clicked
+    <Input
       autoFocus
       aria-label="Icon name"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={onKeyDown}
-      className="h-7 w-40 rounded-[3px] border border-accent bg-white px-1.5 text-[13px] text-zinc-900 outline-none"
+      className="h-7 w-40 text-[13px] md:text-[13px]"
     />
   )
 }
+
+const Divider = () => <Separator orientation="vertical" className="mx-1 h-4 self-center" />
 
 export const TopBar = () => {
   const { canUndo, canRedo } = useHistory()
@@ -71,9 +77,11 @@ export const TopBar = () => {
   const fileInput = useRef<HTMLInputElement>(null)
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-zinc-200 border-b bg-white px-3">
-      <span className="select-none text-[11px] text-zinc-400">vec2icon</span>
-      <span className="h-4 w-px bg-zinc-200" />
+    <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-background px-3">
+      <span className="select-none px-1 font-medium font-mono text-[12px] text-muted-foreground tracking-tight">
+        vec2icon
+      </span>
+      <Divider />
       <DocName />
 
       <div className="flex-1" />
@@ -85,7 +93,7 @@ export const TopBar = () => {
         <Redo2 size={15} aria-hidden="true" />
       </IconButton>
 
-      <span className="h-4 w-px bg-zinc-200" />
+      <Divider />
 
       <input
         ref={fileInput}
@@ -99,28 +107,17 @@ export const TopBar = () => {
           void importFiles(files, useEditor.getState())
         }}
       />
-      <button
-        type="button"
-        className="flex h-7 items-center gap-1.5 rounded-[3px] border border-zinc-300 px-2 text-zinc-800 hover:border-zinc-400 hover:bg-zinc-100"
-        onClick={() => fileInput.current?.click()}
-      >
-        <Upload size={14} aria-hidden="true" />
+      <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
+        <Upload data-icon="inline-start" aria-hidden="true" />
         Import
-      </button>
-      <button
-        type="button"
-        className="flex h-7 items-center gap-1.5 rounded-[3px] border border-accent/50 px-2 text-accent hover:border-accent hover:bg-accent-weak"
-        onClick={() => setView({ exportOpen: true })}
-      >
-        <Download size={14} aria-hidden="true" />
+      </Button>
+      <Button size="sm" onClick={() => setView({ exportOpen: true })}>
+        <Download data-icon="inline-start" aria-hidden="true" />
         Export
-      </button>
+      </Button>
 
       <IssuesPanel />
-
-      <IconButton label="Help" onClick={() => setView({ helpOpen: true })}>
-        <HelpCircle size={15} aria-hidden="true" />
-      </IconButton>
+      <AppMenu />
     </header>
   )
 }

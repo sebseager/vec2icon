@@ -2,16 +2,8 @@
 import { setLayerOverride as setLayerOverrideOp } from '@/core/model/ops'
 import type { Appearance, BlendMode, Fill, Layer, LayerOverride } from '@/core/model/types'
 import { useEditor } from '@/state'
-import {
-  alphaOf,
-  colorToHex,
-  grayColor,
-  grayLevel,
-  solidColor,
-  toGrayColor,
-  toSrgbColor,
-  withAlpha,
-} from '../lib/color'
+import { ColorField } from '../lib/ColorField'
+import { alphaOf, grayColor, grayLevel, toGrayColor, toSrgbColor, withAlpha } from '../lib/color'
 import { Field, Section } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
 import { BLEND_MODE_OPTIONS } from '../lib/options'
@@ -96,16 +88,11 @@ export const LayerOverrides = ({
 
       {kind === 'solid' ? (
         <Field label="Color">
-          <input
-            type="color"
-            aria-label="Override color"
-            value={colorToHex(color)}
-            onChange={(e) =>
-              live({ fill: { kind: 'solid', color: solidColor(e.target.value, alphaOf(color)) } })
-            }
-            className="h-6 w-10 shrink-0 rounded-[3px] border border-zinc-300 bg-white"
+          <ColorField
+            label="Override color"
+            color={color}
+            onChange={(next) => live({ fill: { kind: 'solid', color: next } })}
           />
-          <span className="truncate text-zinc-500">{colorToHex(color)}</span>
         </Field>
       ) : null}
 
@@ -119,13 +106,13 @@ export const LayerOverrides = ({
         />
       ) : null}
 
-      {kind === 'inherit' ? null : (
+      {kind === 'gray' ? (
         <Slider
           label="Alpha"
           value={alphaOf(color)}
           onChange={(alpha) => live({ fill: { kind: 'solid', color: withAlpha(color, alpha) } })}
         />
-      )}
+      ) : null}
 
       <Field label="Opacity">
         <Toggle

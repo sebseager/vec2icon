@@ -11,10 +11,10 @@ export default defineConfig({
     },
   },
   build: {
-    // One client-side bundle by design: React, Base UI and dnd-kit are all needed
-    // on first paint, so code-splitting would only add round trips. ~615 kB
-    // (~205 kB gzipped) is expected; raise the bar so a real regression stands out.
-    chunkSizeWarningLimit: 700,
+    // One client-side bundle by design: React, Base UI, shadcn parts and dnd-kit are
+    // all needed on first paint, so code-splitting would only add round trips. ~725 kB
+    // (~235 kB gzipped) is expected; raise the bar so a real regression stands out.
+    chunkSizeWarningLimit: 800,
   },
   test: {
     environment: 'happy-dom',

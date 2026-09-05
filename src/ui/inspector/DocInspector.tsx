@@ -79,7 +79,7 @@ export const DocInspector = () => {
       </Section>
 
       <Section title="Compatibility">
-        <p className="text-zinc-600">
+        <p className="text-muted-foreground">
           {features.length === 0
             ? 'Xcode 26 compatible'
             : `Requires Xcode 27 (uses: ${features.join(', ')})`}

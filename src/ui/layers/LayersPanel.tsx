@@ -40,10 +40,10 @@ export const LayersPanel = () => {
   return (
     <aside
       aria-label="Layers"
-      className="flex w-64 shrink-0 flex-col overflow-y-auto border-zinc-200 border-r bg-white"
+      className="flex w-64 shrink-0 flex-col overflow-y-auto border-r bg-background"
     >
       {groups.length === 0 ? (
-        <p className="p-3 text-zinc-500">
+        <p className="p-3 text-muted-foreground">
           No layers yet. Drop SVG files anywhere in the window, or use Import.
         </p>
       ) : (

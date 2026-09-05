@@ -1,4 +1,5 @@
 /** Right pane. The appearance switch scopes everything below it. */
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { findGroup, findLayer } from '@/core/model/ops'
 import type { Appearance } from '@/core/model/types'
 import { useEditor } from '@/state'
@@ -17,24 +18,20 @@ const AppearanceSwitch = () => {
   const appearance = useEditor((s) => s.view.appearance)
   const setView = useEditor((s) => s.setView)
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1.5 border-zinc-200 border-b px-3">
-      <div className="flex flex-1 rounded-[3px] border border-zinc-300 p-px">
-        {APPEARANCE_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            aria-pressed={appearance === tab.value}
-            className={`h-5 flex-1 rounded-[2px] ${
-              appearance === tab.value
-                ? 'bg-accent-weak text-zinc-900'
-                : 'text-zinc-600 hover:text-zinc-900'
-            }`}
-            onClick={() => setView({ appearance: tab.value })}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex h-9 shrink-0 items-center gap-1.5 border-b px-3">
+      <Tabs
+        value={appearance}
+        onValueChange={(value) => setView({ appearance: value as Appearance })}
+        className="min-w-0 flex-1"
+      >
+        <TabsList className="h-7 w-full flex-1">
+          {APPEARANCE_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
       <HelpTip topic="Appearance">
         Which set of values the inspector edits. Default is the base artwork; Dark and Mono hold
         overrides on top of it. The canvas keeps showing the rendition picked in the toolbar.
@@ -56,7 +53,7 @@ export const Inspector = () => {
   return (
     <aside
       aria-label="Inspector"
-      className="flex w-72 shrink-0 flex-col overflow-y-auto border-zinc-200 border-l bg-white"
+      className="flex w-72 shrink-0 flex-col overflow-y-auto border-l bg-background"
     >
       <AppearanceSwitch />
       {layers.length > 0 ? (

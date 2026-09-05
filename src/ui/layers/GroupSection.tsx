@@ -1,16 +1,21 @@
 /** A collapsible group: header, glass summary, and its layers top-most first. */
-import { Menu } from '@base-ui/react/menu'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { type KeyboardEvent, useState } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import type { Group } from '@/core/model/types'
 import { useEditor } from '@/state'
 import { IconButton } from '../lib/IconButton'
 import { percent } from '../lib/options'
 import { groupDropId } from './dropTarget'
 import { LayerRow } from './LayerRow'
-import { menuItemClass, menuPopupClass } from './menuStyles'
 
 const glassSummary = (group: Group): string => {
   const { lighting, blurMaterial, shadow } = group.glass
@@ -51,15 +56,16 @@ export const GroupSection = ({
   }
 
   return (
-    <section className="border-zinc-200 border-b">
+    <section className="border-b">
       <div
         ref={collapsed ? setNodeRef : undefined}
         className={`flex h-7 items-center gap-0.5 pr-1 pl-0.5 ${
-          selected ? 'bg-accent-weak text-zinc-900' : 'text-zinc-800 hover:bg-zinc-100'
+          selected ? 'bg-primary/10 text-foreground' : 'text-foreground hover:bg-muted'
         }`}
       >
         <IconButton
           label={collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
+          size="xs"
           className="size-5"
           onClick={() => onToggle(group.id)}
         >
@@ -80,46 +86,40 @@ export const GroupSection = ({
             {group.name}
           </button>
         ) : (
-          <input
-            // biome-ignore lint/a11y/noAutofocus: the field replaces the name on double-click
+          <Input
             autoFocus
             aria-label="Group name"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commitName}
             onKeyDown={onNameKeyDown}
-            className="min-w-0 flex-1 rounded-[3px] border border-accent bg-white px-1 text-zinc-900 outline-none"
+            className="h-6 min-w-0 flex-1 px-1 text-xs md:text-xs"
           />
         )}
 
-        <Menu.Root>
-          <Menu.Trigger
-            aria-label={`${group.name} options`}
-            className="flex size-6 items-center justify-center rounded-[3px] text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-          >
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<IconButton label={`${group.name} options`} size="xs" />}>
             <MoreHorizontal size={14} aria-hidden="true" />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <Menu.Positioner side="bottom" align="end" sideOffset={4}>
-              <Menu.Popup className={menuPopupClass}>
-                <Menu.Item className={menuItemClass} onClick={() => setDraft(group.name)}>
-                  Rename
-                </Menu.Item>
-                <Menu.Item className={menuItemClass} onClick={() => removeGroup(group.id, false)}>
-                  Delete group
-                </Menu.Item>
-                <Menu.Item className={menuItemClass} onClick={() => removeGroup(group.id, true)}>
-                  Delete group, keep layers
-                </Menu.Item>
-              </Menu.Popup>
-            </Menu.Positioner>
-          </Menu.Portal>
-        </Menu.Root>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-auto">
+            <DropdownMenuItem className="text-xs" onClick={() => setDraft(group.name)}>
+              Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs" onClick={() => removeGroup(group.id, false)}>
+              Delete group
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs" onClick={() => removeGroup(group.id, true)}>
+              Delete group, keep layers
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {collapsed ? null : (
         <>
-          <p className="px-1.5 pb-1 pl-6 text-[11px] text-zinc-500">{glassSummary(group)}</p>
+          <p className="px-1.5 pb-1 pl-6 text-[11px] text-muted-foreground">
+            {glassSummary(group)}
+          </p>
           <SortableContext items={layerIds} strategy={verticalListSortingStrategy}>
             <ul className="pb-1">
               {group.layers.map((layer, index) => (
@@ -134,7 +134,7 @@ export const GroupSection = ({
               {group.layers.length === 0 ? (
                 <li
                   ref={setNodeRef}
-                  className="mx-1.5 mb-1 border border-zinc-200 border-dashed px-2 py-1.5 text-zinc-400"
+                  className="mx-1.5 mb-1 rounded-md border border-dashed px-2 py-1.5 text-muted-foreground"
                 >
                   Drop layers here
                 </li>

@@ -1,5 +1,6 @@
 /** Number input that commits on Enter or blur, not on every keystroke. Escape reverts. */
 import { type KeyboardEvent, useEffect, useState } from 'react'
+import { Input } from '@/components/ui/input'
 
 export const NumberField = ({
   label,
@@ -42,8 +43,8 @@ export const NumberField = ({
   }
 
   return (
-    <label className="flex h-6 min-w-0 flex-1 items-center rounded-[3px] border border-zinc-300 bg-white px-1.5 focus-within:border-accent">
-      <input
+    <div className="relative min-w-0 flex-1">
+      <Input
         aria-label={label}
         type="number"
         inputMode="decimal"
@@ -56,9 +57,13 @@ export const NumberField = ({
         }}
         onBlur={commit}
         onKeyDown={onKeyDown}
-        className="w-full min-w-0 bg-transparent text-[12px] text-zinc-800 outline-none"
+        className={`h-6 rounded-md px-1.5 text-xs [appearance:textfield] md:text-xs [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${suffix ? 'pr-5' : ''}`}
       />
-      {suffix ? <span className="pl-1 text-zinc-500">{suffix}</span> : null}
-    </label>
+      {suffix ? (
+        <span className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center text-muted-foreground">
+          {suffix}
+        </span>
+      ) : null}
+    </div>
   )
 }

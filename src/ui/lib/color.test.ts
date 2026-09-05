@@ -3,6 +3,7 @@ import { hexToColor } from '@/core/export/color'
 import {
   alphaOf,
   colorToHex,
+  colorToHex8,
   grayColor,
   grayLevel,
   solidColor,
@@ -94,5 +95,15 @@ describe('solidColor', () => {
 
   it('falls back to opaque black for junk', () => {
     expect(solidColor('nope', 1)).toEqual({ space: 'srgb', components: [0, 0, 0, 1] })
+  })
+})
+
+describe('colorToHex8', () => {
+  it('appends the alpha byte', () => {
+    expect(colorToHex8({ space: 'srgb', components: [1, 0.5, 0, 0.5] })).toBe('#ff800080')
+  })
+
+  it('renders a gray color with its own alpha', () => {
+    expect(colorToHex8(grayColor(1, 0))).toBe('#ffffff00')
   })
 })

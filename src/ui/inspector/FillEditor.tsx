@@ -1,6 +1,6 @@
 /** Edits one `Fill`: the document background in Default or Dark. */
 import type { Color, Fill } from '@/core/model/types'
-import { alphaOf, colorToHex, solidColor, withAlpha } from '../lib/color'
+import { ColorField } from '../lib/ColorField'
 import { Field } from '../lib/Field'
 import { type Option, Select } from '../lib/Select'
 import { Slider } from '../lib/Slider'
@@ -47,23 +47,9 @@ const ColorRow = ({
   color: Color
   onChange: (color: Color) => void
 }) => (
-  <>
-    <Field label={label}>
-      <input
-        type="color"
-        aria-label={`${label} color`}
-        value={colorToHex(color)}
-        onChange={(e) => onChange(solidColor(e.target.value, alphaOf(color)))}
-        className="h-6 w-10 shrink-0 rounded-[3px] border border-zinc-300 bg-white"
-      />
-      <span className="truncate text-zinc-500">{colorToHex(color)}</span>
-    </Field>
-    <Slider
-      label="Alpha"
-      value={alphaOf(color)}
-      onChange={(alpha) => onChange(withAlpha(color, alpha))}
-    />
-  </>
+  <Field label={label}>
+    <ColorField label={`${label} color`} color={color} onChange={onChange} />
+  </Field>
 )
 
 export const FillEditor = ({

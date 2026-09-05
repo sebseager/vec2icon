@@ -1,5 +1,6 @@
 /** Text input that commits on Enter or blur, not on every keystroke. Escape reverts. */
 import { type KeyboardEvent, useEffect, useState } from 'react'
+import { Input } from '@/components/ui/input'
 
 export const TextField = ({
   label,
@@ -34,7 +35,7 @@ export const TextField = ({
   }
 
   return (
-    <input
+    <Input
       aria-label={label}
       value={draft}
       onChange={(e) => {
@@ -43,7 +44,7 @@ export const TextField = ({
       }}
       onBlur={commit}
       onKeyDown={onKeyDown}
-      className="h-6 min-w-0 flex-1 rounded-[3px] border border-zinc-300 bg-white px-1.5 text-[12px] text-zinc-800 outline-none focus:border-accent"
+      className="h-6 min-w-0 flex-1 rounded-md px-1.5 text-xs md:text-xs"
     />
   )
 }

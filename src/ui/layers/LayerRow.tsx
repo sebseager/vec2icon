@@ -1,15 +1,21 @@
 /** One layer: drag handle, visibility, glass, name, and the row context menu. */
 
-import { ContextMenu } from '@base-ui/react/context-menu'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Eye, EyeOff, GripVertical, Sparkles } from 'lucide-react'
 import { type KeyboardEvent, type MouseEvent, useState } from 'react'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import { Input } from '@/components/ui/input'
 import type { Layer } from '@/core/model/types'
 import { mergeLayers as mergeLayersFn, splitLayer as splitLayerFn } from '@/core/svg'
 import { useEditor } from '@/state'
 import { IconButton } from '../lib/IconButton'
-import { menuItemClass, menuPopupClass } from './menuStyles'
 
 /** The rows an action applies to: the whole selection when this row is part of it. */
 const targetIds = (selected: string[], layerId: string): string[] =>
@@ -68,12 +74,12 @@ export const LayerRow = ({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={isDragging ? 'opacity-40' : undefined}
     >
-      <ContextMenu.Root>
-        <ContextMenu.Trigger
+      <ContextMenu>
+        <ContextMenuTrigger
           render={
             <div
               className={`group flex h-7 items-center gap-0.5 pr-1 pl-0.5 ${
-                selected ? 'bg-accent-weak text-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'
+                selected ? 'bg-primary/10 text-foreground' : 'text-foreground hover:bg-muted'
               }`}
             />
           }
@@ -82,7 +88,7 @@ export const LayerRow = ({
             type="button"
             ref={setActivatorNodeRef}
             aria-label={`Reorder ${layer.name}`}
-            className="flex size-5 shrink-0 cursor-grab items-center justify-center text-zinc-300 hover:text-zinc-600 group-hover:text-zinc-400"
+            className="flex size-5 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground/50 outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
             {...attributes}
             {...listeners}
           >
@@ -91,7 +97,7 @@ export const LayerRow = ({
 
           <IconButton
             label={layer.hidden ? `Show ${layer.name}` : `Hide ${layer.name}`}
-            className="size-6"
+            size="xs"
             onClick={() => updateLayer(layer.id, { hidden: !layer.hidden })}
           >
             {layer.hidden ? (
@@ -105,7 +111,8 @@ export const LayerRow = ({
             label={
               layer.glass ? `Turn off glass on ${layer.name}` : `Turn on glass on ${layer.name}`
             }
-            className={`size-6 ${layer.glass ? 'text-accent' : 'text-zinc-300'}`}
+            size="xs"
+            className={layer.glass ? 'text-primary hover:text-primary' : 'text-muted-foreground/50'}
             onClick={() => updateLayer(layer.id, { glass: !layer.glass })}
           >
             <Sparkles size={13} aria-hidden="true" />
@@ -115,78 +122,73 @@ export const LayerRow = ({
             <button
               type="button"
               data-testid="layer-name"
-              className={`min-w-0 flex-1 truncate px-1 text-left ${layer.hidden ? 'text-zinc-400' : ''}`}
+              className={`min-w-0 flex-1 truncate px-1 text-left ${layer.hidden ? 'text-muted-foreground' : ''}`}
               onClick={(e: MouseEvent) => select([layer.id], { additive: e.shiftKey })}
               onDoubleClick={() => setDraft(layer.name)}
             >
               {layer.name}
             </button>
           ) : (
-            <input
-              // biome-ignore lint/a11y/noAutofocus: the field replaces the name on double-click
+            <Input
               autoFocus
               aria-label="Layer name"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitName}
               onKeyDown={onNameKeyDown}
-              className="min-w-0 flex-1 rounded-[3px] border border-accent bg-white px-1 text-zinc-900 outline-none"
+              className="h-6 min-w-0 flex-1 px-1 text-xs md:text-xs"
             />
           )}
 
           {layer.issues.length > 0 ? (
             <span
               title={`${layer.issues.length} issues`}
-              className="size-1.5 shrink-0 rounded-full bg-warn"
+              className="size-1.5 shrink-0 rounded-full bg-warning"
             />
           ) : null}
-        </ContextMenu.Trigger>
+        </ContextMenuTrigger>
 
-        <ContextMenu.Portal>
-          <ContextMenu.Positioner>
-            <ContextMenu.Popup className={menuPopupClass}>
-              <ContextMenu.Item
-                className={menuItemClass}
-                onClick={run(() => useEditor.getState().splitLayer(layer.id, splitLayerFn))}
-              >
-                Split
-              </ContextMenu.Item>
-              <ContextMenu.Item
-                className={menuItemClass}
-                disabled={!canMerge}
-                onClick={run(() => useEditor.getState().mergeLayers(ids, mergeLayersFn))}
-              >
-                Merge
-              </ContextMenu.Item>
-              <ContextMenu.Item
-                className={menuItemClass}
-                onClick={run(() => useEditor.getState().duplicateLayers(ids))}
-              >
-                Duplicate
-              </ContextMenu.Item>
-              <ContextMenu.Item
-                className={menuItemClass}
-                onClick={run(() => useEditor.getState().removeLayers(ids))}
-              >
-                Delete
-              </ContextMenu.Item>
-              <ContextMenu.Separator className="my-1 h-px bg-zinc-200" />
-              <ContextMenu.Item
-                className={menuItemClass}
-                onClick={run(() => useEditor.getState().groupFromLayers(ids))}
-              >
-                Move to new group
-              </ContextMenu.Item>
-              <ContextMenu.Item
-                className={menuItemClass}
-                onClick={() => useEditor.getState().ungroup(groupId)}
-              >
-                Ungroup
-              </ContextMenu.Item>
-            </ContextMenu.Popup>
-          </ContextMenu.Positioner>
-        </ContextMenu.Portal>
-      </ContextMenu.Root>
+        <ContextMenuContent>
+          <ContextMenuItem
+            className="text-xs"
+            onClick={run(() => useEditor.getState().splitLayer(layer.id, splitLayerFn))}
+          >
+            Split
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="text-xs"
+            disabled={!canMerge}
+            onClick={run(() => useEditor.getState().mergeLayers(ids, mergeLayersFn))}
+          >
+            Merge
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="text-xs"
+            onClick={run(() => useEditor.getState().duplicateLayers(ids))}
+          >
+            Duplicate
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="text-xs"
+            onClick={run(() => useEditor.getState().removeLayers(ids))}
+          >
+            Delete
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            className="text-xs"
+            onClick={run(() => useEditor.getState().groupFromLayers(ids))}
+          >
+            Move to new group
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="text-xs"
+            onClick={() => useEditor.getState().ungroup(groupId)}
+          >
+            Ungroup
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     </li>
   )
 }

@@ -2,6 +2,7 @@
  * the same thing on every one of them. */
 import { FlipHorizontal, FlipVertical, Link, Unlink } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { updateLayers as updateLayersOp } from '@/core/model/ops'
 import type { Appearance, BlendMode, Layer } from '@/core/model/types'
 import { useEditor } from '@/state'
@@ -89,22 +90,22 @@ const Placement = ({ layer }: { layer: Layer }) => {
       </Field>
 
       <Field label="Flip">
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="xs"
           aria-label="Flip horizontally"
-          className="flex h-6 items-center gap-1 rounded-[3px] border border-zinc-300 px-2 text-zinc-700 hover:bg-zinc-100"
           onClick={() => setTransform(layer.id, { scaleX: -t.scaleX })}
         >
-          <FlipHorizontal size={13} aria-hidden="true" />H
-        </button>
-        <button
-          type="button"
+          <FlipHorizontal size={13} aria-hidden="true" data-icon="inline-start" />H
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
           aria-label="Flip vertically"
-          className="flex h-6 items-center gap-1 rounded-[3px] border border-zinc-300 px-2 text-zinc-700 hover:bg-zinc-100"
           onClick={() => setTransform(layer.id, { scaleY: -t.scaleY })}
         >
-          <FlipVertical size={13} aria-hidden="true" />V
-        </button>
+          <FlipVertical size={13} aria-hidden="true" data-icon="inline-start" />V
+        </Button>
       </Field>
     </>
   )

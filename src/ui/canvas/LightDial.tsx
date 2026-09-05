@@ -54,7 +54,7 @@ export const LightDial = ({ angle, onChange }: Props) => {
       aria-valuemax={360}
       aria-valuenow={Math.round(normalizeAngle(angle))}
       aria-valuetext={`${Math.round(normalizeAngle(angle))} degrees`}
-      className="relative shrink-0 cursor-grab touch-none rounded-full border border-zinc-300 bg-white shadow-inner outline-none active:cursor-grabbing focus-visible:border-[#0a84ff] focus-visible:ring-2 focus-visible:ring-[#0a84ff]/30"
+      className="relative shrink-0 cursor-grab touch-none rounded-full border border-input bg-background shadow-inner outline-none active:cursor-grabbing focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       style={{ width: SIZE, height: SIZE }}
       onPointerDown={(e) => {
         dragging.current = true

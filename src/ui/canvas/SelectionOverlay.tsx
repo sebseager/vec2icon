@@ -58,7 +58,7 @@ export const SelectionOverlay = ({ selected, hover, ptsPerPixel }: Props) => {
                 y={points[corner].y - handleSide / 2}
                 width={handleSide}
                 height={handleSide}
-                fill="#ffffff"
+                fill="var(--background)"
                 stroke={ACCENT}
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
@@ -68,7 +68,7 @@ export const SelectionOverlay = ({ selected, hover, ptsPerPixel }: Props) => {
               cx={points.rotate.x}
               cy={points.rotate.y}
               r={handleSide / 2}
-              fill="#ffffff"
+              fill="var(--background)"
               stroke={ACCENT}
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
