@@ -158,7 +158,7 @@ describe('ComposeDialog', () => {
 
     await waitFor(() =>
       expect(useEditor.getState().toasts[0]?.message).toBe(
-        'Compose failed: Anthropic rejected the API key.',
+        'Request failed: Anthropic rejected the API key.',
       ),
     )
     expect(screen.getByRole('button', { name: 'Compose' })).toHaveProperty('disabled', false)
@@ -180,7 +180,7 @@ describe('ComposeDialog', () => {
     await waitFor(() => expect(screen.getByText('API key saved in this browser')).toBeTruthy())
     await user.type(screen.getByLabelText('What should the icon show?'), 'a sun')
     await user.click(screen.getByRole('button', { name: 'Compose' }))
-    await waitFor(() => expect(screen.getByText('Composing…')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Working…')).toBeTruthy())
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByRole('button', { name: 'Compose' })).toHaveProperty('disabled', false)

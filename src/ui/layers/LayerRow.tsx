@@ -135,6 +135,12 @@ export const LayerRow = ({
         })),
     },
     { kind: 'item', label: 'Ungroup', onClick: () => useEditor.getState().ungroup(groupId) },
+    { kind: 'separator' },
+    {
+      kind: 'item',
+      label: 'AI Adjust…',
+      onClick: () => useEditor.getState().setView({ adjustLayerId: layer.id }),
+    },
   ]
 
   return (

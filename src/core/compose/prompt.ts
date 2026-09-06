@@ -46,3 +46,38 @@ export const fixMessage = (wish: string, previousSvg: string, problems: string[]
     '',
     'Reply with the complete corrected SVG document and nothing else.',
   ].join('\n')
+
+/** Frozen for the same reason as `SYSTEM_PROMPT`. */
+export const ADJUST_SYSTEM_PROMPT = `You edit one layer of an app icon as SVG for vec2icon, a tool that turns SVG artwork into an Apple Icon Composer bundle. Icon Composer adds its own glass material, depth, highlights and shadows to every layer, so artwork stays flat and bold and leaves lighting to it.
+
+The user sends the layer as a complete SVG document together with an instruction. Reply with the complete edited SVG document and nothing else: no prose, no Markdown fences, no comments.
+
+Rules
+- Change only what the instruction asks for. Everything else, elements, attributes, ids, order and coordinates, stays exactly as it was.
+- Keep the root <svg> viewBox exactly as given, and keep the <title>. The artwork must stay in the same place and at the same scale unless the instruction says otherwise.
+- Allowed elements: g, path, rect, circle, ellipse, polygon, polyline, line, defs, linearGradient, radialGradient, stop, title.
+- Forbidden: text, image, use, symbol, pattern, marker, filter, mask, clipPath, foreignObject, script, style, and any CSS or class attribute. Style with presentation attributes only (fill, stroke, stroke-width, stroke-linecap, stroke-linejoin, opacity, fill-opacity, transform).
+- Do not add drop shadows, highlights, bevels, glows or reflections. Icon Composer does that.
+- No external references of any kind. Every href points to #an-id in this document.
+- Keep the document well-formed XML: every element closed, attributes quoted, ampersands escaped.`
+
+export const adjustMessage = (instruction: string, document: string): string =>
+  ['Instruction:', instruction.trim(), '', 'Layer:', document].join('\n')
+
+export const adjustFixMessage = (
+  instruction: string,
+  previousSvg: string,
+  problems: string[],
+): string =>
+  [
+    'Instruction:',
+    instruction.trim(),
+    '',
+    'Your previous edit of this layer was rejected by the importer:',
+    previousSvg,
+    '',
+    'Problems:',
+    ...problems.map((problem) => `- ${problem}`),
+    '',
+    'Reply with the complete corrected SVG document and nothing else.',
+  ].join('\n')

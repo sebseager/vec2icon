@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useEditor } from '@/state'
 import { CanvasPane } from './canvas/CanvasPane'
+import { AdjustDialog } from './compose/AdjustDialog'
 import { ComposeDialog } from './compose/ComposeDialog'
 import { ExportDialog } from './export/ExportDialog'
 import { HelpDialog } from './HelpDialog'
@@ -78,6 +79,7 @@ export default function App() {
         <HelpDialog />
         <ExportDialog />
         <ComposeDialog />
+        <AdjustDialog />
 
         {draggingFiles ? (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80">

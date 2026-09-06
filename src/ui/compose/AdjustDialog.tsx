@@ -1,4 +1,4 @@
-/** Describe an icon; Claude draws it as layered SVG and it lands in the document like a drop. */
+/** Describe a change to one layer; Claude edits that layer's artwork and nothing else. */
 import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,16 +12,19 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import {
-  briefMessage,
-  composeIcon,
+  ADJUST_SYSTEM_PROMPT,
+  type AdjustedArt,
+  adjustMessage,
+  adjustTask,
   costBound,
   estimateTokens,
+  layerDocument,
   MAX_OUTPUT_TOKENS,
   OPUS_5_PRICING,
-  type Parsed,
-  SYSTEM_PROMPT,
+  runTask,
   type Usage,
 } from '@/core/compose'
+import type { Layer } from '@/core/model/types'
 import { useEditor } from '@/state'
 import { idbKeyStore, type KeyStore } from './lib/keyStorage'
 import {
@@ -35,63 +38,81 @@ import {
   useTaskRun,
 } from './parts'
 
-const SYSTEM_TOKENS = estimateTokens(SYSTEM_PROMPT)
-const PLACEHOLDER = 'A weather app: a sun peeking out from behind a cloud, bright and friendly.'
+const SYSTEM_TOKENS = estimateTokens(ADJUST_SYSTEM_PROMPT)
+const PLACEHOLDER = 'Make the cloud fluffier and pure white.'
 
-export const ComposeDialog = ({ keyStore = idbKeyStore }: { keyStore?: KeyStore }) => {
-  const open = useEditor((s) => s.view.composeOpen)
+const findLayer = (groups: { layers: Layer[] }[], id: string | null): Layer | null => {
+  if (!id) return null
+  for (const group of groups) {
+    const layer = group.layers.find((l) => l.id === id)
+    if (layer) return layer
+  }
+  return null
+}
+
+export const AdjustDialog = ({ keyStore = idbKeyStore }: { keyStore?: KeyStore }) => {
+  const layerId = useEditor((s) => s.view.adjustLayerId)
+  const groups = useEditor((s) => s.doc.groups)
   const setView = useEditor((s) => s.setView)
   const pushToast = useEditor((s) => s.pushToast)
-  const importComposed = useEditor((s) => s.importComposed)
+  const applyFixResult = useEditor((s) => s.applyFixResult)
 
+  const layer = findLayer(groups, layerId)
+  const open = layer !== null
   const { savedKey, saveKey, forgetKey } = useApiKey(open, keyStore)
-  const [wish, setWish] = useState('')
+  const [instruction, setInstruction] = useState('')
   const [autoFix, setAutoFix] = useState(true)
   const [fixTurns, setFixTurns] = useState(1)
-  const wishId = useId()
+  const instructionId = useId()
 
   const close = () => {
     cancel()
-    setView({ composeOpen: false })
+    setInstruction('')
+    setView({ adjustLayerId: null })
   }
 
-  const finish = (parsed: Parsed, usages: Usage[], problems: string[]) => {
-    importComposed(parsed.groups, parsed.fill, parsed.name)
+  const finish = (art: AdjustedArt, usages: Usage[], problems: string[]) => {
+    if (!layer) return
+    applyFixResult(layer.id, { ...layer, ...art })
     const caveat = problems.length > 0 ? ` with ${problems.length} open issue(s)` : ''
-    pushToast({ message: `Composed "${parsed.name}"${caveat} for ${spent(usages)}` })
+    pushToast({ message: `Adjusted "${layer.name}"${caveat} for ${spent(usages)}` })
     close()
   }
 
-  const { phase, running, start, cancel } = useTaskRun<Parsed>((outcome) =>
+  const { phase, running, start, cancel } = useTaskRun<AdjustedArt>((outcome) =>
     finish(outcome.parsed, outcome.usages, []),
   )
 
   const effectiveFixTurns = autoFix ? fixTurns : 0
-  const bound = costBound({
-    systemTokens: SYSTEM_TOKENS,
-    briefTokens: estimateTokens(briefMessage(wish)),
-    maxOutputTokens: MAX_OUTPUT_TOKENS,
-    fixTurns: effectiveFixTurns,
-    pricing: OPUS_5_PRICING,
-  })
+  const bound = layer
+    ? costBound({
+        systemTokens: SYSTEM_TOKENS,
+        briefTokens: estimateTokens(adjustMessage(instruction, layerDocument(layer))),
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        fixTurns: effectiveFixTurns,
+        pricing: OPUS_5_PRICING,
+      })
+    : 0
 
-  const compose = () => {
-    if (!savedKey || !wish.trim()) return
+  const adjust = () => {
+    if (!layer || !savedKey || !instruction.trim()) return
+    const task = adjustTask(instruction, layer)
     void start(savedKey, (generate, signal, onProgress) =>
-      composeIcon(generate, { wish, fixTurns: effectiveFixTurns, signal }, onProgress),
+      runTask(generate, task, { fixTurns: effectiveFixTurns, signal }, onProgress),
     )
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? setView({ composeOpen: true }) : close())}>
+    <Dialog open={open} onOpenChange={(next) => (next ? undefined : close())}>
       <DialogContent
         showCloseButton={false}
         className="w-[27rem] max-w-[calc(100vw-2rem)] gap-0 p-0 text-xs sm:max-w-[27rem]"
       >
         <DialogHeader className="gap-0.5 border-b px-4 py-3">
-          <DialogTitle className="text-[13px]">AI Compose</DialogTitle>
+          <DialogTitle className="text-[13px]">AI Adjust</DialogTitle>
           <DialogDescription className="text-xs">
-            Describe an icon and Claude Opus draws it as layered SVG, straight into the document.
+            Describe a change and Claude Opus edits the artwork of &ldquo;{layer?.name}&rdquo;,
+            leaving every other layer alone.
           </DialogDescription>
         </DialogHeader>
 
@@ -104,16 +125,16 @@ export const ComposeDialog = ({ keyStore = idbKeyStore }: { keyStore?: KeyStore 
           />
 
           <section className="flex flex-col gap-1.5 border-t pt-4">
-            <Label htmlFor={wishId} className="text-xs font-normal">
-              What should the icon show?
+            <Label htmlFor={instructionId} className="text-xs font-normal">
+              What should change?
             </Label>
             <textarea
-              id={wishId}
+              id={instructionId}
               rows={3}
               placeholder={PLACEHOLDER}
-              value={wish}
+              value={instruction}
               disabled={running}
-              onChange={(e) => setWish(e.target.value)}
+              onChange={(e) => setInstruction(e.target.value)}
               className={`${fieldClass} resize-y leading-relaxed`}
             />
           </section>
@@ -149,11 +170,11 @@ export const ComposeDialog = ({ keyStore = idbKeyStore }: { keyStore?: KeyStore 
                 }
               }}
             >
-              Import anyway
+              Apply anyway
             </Button>
           ) : null}
-          <Button size="sm" disabled={running || !savedKey || !wish.trim()} onClick={compose}>
-            {phase.kind === 'invalid' ? 'Try again' : 'Compose'}
+          <Button size="sm" disabled={running || !savedKey || !instruction.trim()} onClick={adjust}>
+            {phase.kind === 'invalid' ? 'Try again' : 'Adjust'}
           </Button>
         </DialogFooter>
       </DialogContent>

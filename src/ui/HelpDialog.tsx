@@ -92,7 +92,8 @@ export const HelpDialog = () => {
             only to api.anthropic.com; each run is billed to your account, usually a few cents. The
             dialog shows the most a run can cost before you start. When the drawing fails the import
             checks it can be handed back to the model to fix a bounded number of times, or imported
-            as is so you can fix it by hand.
+            as is so you can fix it by hand. AI Adjust, in a layer&rsquo;s menu, works the same way
+            on one existing layer: describe a change and only that layer&rsquo;s artwork is edited.
           </p>
         </Topic>
 

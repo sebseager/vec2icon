@@ -1,4 +1,4 @@
-/** The compose loop: ask, check, and hand rejected output back a bounded number of times. */
+/** The model loop: ask, check, and hand rejected output back a bounded number of times. */
 import type { Usage } from './cost'
 import { extractSvg } from './extract'
 import { briefMessage, fixMessage, MAX_OUTPUT_TOKENS, SYSTEM_PROMPT } from './prompt'
@@ -17,8 +17,17 @@ export type Generation = {
 /** Whatever makes the API call. Injected so the loop is testable without a network. */
 export type Generate = (request: GenerateRequest, signal?: AbortSignal) => Promise<Generation>
 
-export type ComposeOptions = {
-  wish: string
+/** What one kind of job says to the model and how it judges the reply. */
+export type Task<P> = {
+  system: string
+  /** The first user message. */
+  first: string
+  /** The user message for a fix turn: the rejected document and why. */
+  fix: (previousSvg: string, problems: string[]) => string
+  validate: (svg: string) => Promise<{ problems: string[]; parsed: P | null }>
+}
+
+export type RunOptions = {
   /** Extra turns to spend on fixes; 0 means one shot. */
   fixTurns: number
   signal?: AbortSignal
@@ -26,16 +35,10 @@ export type ComposeOptions = {
 
 export type ComposeProgress = { turn: number; totalTurns: number; kind: 'compose' | 'fix' }
 
-export type ComposeOutcome =
-  | { status: 'ok'; svg: string; parsed: Parsed; usages: Usage[] }
+export type Outcome<P> =
+  | { status: 'ok'; svg: string; parsed: P; usages: Usage[] }
   /** Every turn was spent and the last document still has problems. */
-  | {
-      status: 'invalid'
-      svg: string | null
-      parsed: Parsed | null
-      problems: string[]
-      usages: Usage[]
-    }
+  | { status: 'invalid'; svg: string | null; parsed: P | null; problems: string[]; usages: Usage[] }
   | { status: 'refused'; reason: string; usages: Usage[] }
   | { status: 'cancelled'; usages: Usage[] }
 
@@ -45,16 +48,17 @@ const NO_SVG = 'The reply contained no <svg> document.'
 /** Shown back to the model in place of a document when the reply had none. */
 const excerpt = (text: string): string => text.trim().slice(0, 2000)
 
-export const composeIcon = async (
+export const runTask = async <P>(
   generate: Generate,
-  { wish, fixTurns, signal }: ComposeOptions,
+  task: Task<P>,
+  { fixTurns, signal }: RunOptions,
   onProgress?: (progress: ComposeProgress) => void,
-): Promise<ComposeOutcome> => {
+): Promise<Outcome<P>> => {
   const usages: Usage[] = []
   const totalTurns = 1 + Math.max(0, fixTurns)
-  let user = briefMessage(wish)
+  let user = task.first
   let svg: string | null = null
-  let parsed: Parsed | null = null
+  let parsed: P | null = null
   let problems: string[] = []
 
   for (let turn = 1; turn <= totalTurns; turn++) {
@@ -62,7 +66,7 @@ export const composeIcon = async (
     onProgress?.({ turn, totalTurns, kind: turn === 1 ? 'compose' : 'fix' })
 
     const reply = await generate(
-      { system: SYSTEM_PROMPT, user, maxTokens: MAX_OUTPUT_TOKENS },
+      { system: task.system, user, maxTokens: MAX_OUTPUT_TOKENS },
       signal,
     )
     usages.push(reply.usage)
@@ -79,7 +83,7 @@ export const composeIcon = async (
     parsed = null
     if (reply.stopReason === 'max_tokens') problems.push(TRUNCATED)
     if (svg) {
-      const validation = await validateComposed(svg)
+      const validation = await task.validate(svg)
       problems.push(...validation.problems)
       parsed = validation.parsed
     } else {
@@ -87,8 +91,24 @@ export const composeIcon = async (
     }
 
     if (problems.length === 0 && svg && parsed) return { status: 'ok', svg, parsed, usages }
-    user = fixMessage(wish, svg ?? excerpt(reply.text), problems)
+    user = task.fix(svg ?? excerpt(reply.text), problems)
   }
 
   return { status: 'invalid', svg, parsed, problems, usages }
 }
+
+export type ComposeOptions = RunOptions & { wish: string }
+export type ComposeOutcome = Outcome<Parsed>
+
+export const composeTask = (wish: string): Task<Parsed> => ({
+  system: SYSTEM_PROMPT,
+  first: briefMessage(wish),
+  fix: (previousSvg, problems) => fixMessage(wish, previousSvg, problems),
+  validate: validateComposed,
+})
+
+export const composeIcon = (
+  generate: Generate,
+  { wish, ...options }: ComposeOptions,
+  onProgress?: (progress: ComposeProgress) => void,
+): Promise<ComposeOutcome> => runTask(generate, composeTask(wish), options, onProgress)

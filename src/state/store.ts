@@ -43,6 +43,8 @@ export type View = {
   exportOpen: boolean
   helpOpen: boolean
   composeOpen: boolean
+  /** The layer AI Adjust is open for, if any. */
+  adjustLayerId: string | null
 }
 
 export type Toast = {
@@ -129,6 +131,7 @@ const initialView = (): View => ({
   exportOpen: false,
   helpOpen: false,
   composeOpen: false,
+  adjustLayerId: null,
 })
 
 const sameFixes = (a: IssueFix[], b: IssueFix[]): boolean =>
