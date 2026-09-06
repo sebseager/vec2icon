@@ -146,6 +146,7 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
       options.pixelRatio,
       options.tint.space,
       options.tint.components.join(','),
+      options.shadows !== false,
       cssWidth,
       cssHeight,
     ].join('|')
@@ -281,7 +282,7 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
         ctx.save()
         ctx.globalAlpha = resolved.opacity * group.opacity
         ctx.globalCompositeOperation = CANVAS_BLEND[resolved.blendMode]
-        if (layer.glass && group.glass.shadow.kind !== 'none') {
+        if (layer.glass && group.glass.shadow.kind !== 'none' && options.shadows !== false) {
           ctx.shadowColor = `rgba(0, 0, 0, ${group.glass.shadow.opacity * 0.6})`
           ctx.shadowBlur = SHADOW_BLUR * scale
           ctx.shadowOffsetY = SHADOW_OFFSET * scale

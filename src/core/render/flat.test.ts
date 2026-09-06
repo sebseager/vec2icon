@@ -173,6 +173,45 @@ describe('the stub harness itself', () => {
   })
 })
 
+describe('shadows', () => {
+  const paint = async (opts: RenderOptions) => {
+    const { canvas, ctx } = fakeCanvas()
+    const renderer = createFlatRenderer(canvas)
+    renderer.resize(128, 128)
+    renderer.render(docWithLayers(1), opts)
+    await flush()
+    runFrame()
+    expect(ctx.drawn).toHaveLength(1)
+    renderer.dispose()
+    return ctx
+  }
+
+  it('draws a glass layer with a drop shadow by default', async () => {
+    const ctx = await paint(options)
+    expect(ctx.shadowBlur).toBeGreaterThan(0)
+  })
+
+  it('leaves the shadow out when the options turn shadows off', async () => {
+    const ctx = await paint({ ...options, shadows: false })
+    expect(ctx.shadowBlur).toBe(0)
+  })
+
+  it('repaints when only the shadows flag changes', async () => {
+    const { canvas, ctx } = fakeCanvas()
+    const renderer = createFlatRenderer(canvas)
+    renderer.resize(128, 128)
+    const doc = docWithLayers(1)
+    renderer.render(doc, { ...options, shadows: false })
+    await flush()
+    runFrame()
+    const drawn = ctx.drawn.length
+    renderer.render(doc, options)
+    runFrame()
+    expect(ctx.drawn.length).toBeGreaterThan(drawn)
+    renderer.dispose()
+  })
+})
+
 describe('a document with more layers than the base cache bound', () => {
   it('draws all 30 layers and does not schedule another paint afterwards', async () => {
     const { canvas, ctx } = fakeCanvas()

@@ -103,6 +103,9 @@ export const CanvasPane = () => {
   const [area, setArea] = useState({ width: 0, height: 0 })
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [cursor, setCursor] = useState('default')
+  // Shadows are left out while a transform gesture runs, so the drag repaints faster;
+  // the drop repaints once more with them back.
+  const [gesturing, setGesturing] = useState(false)
 
   const size = stageSize(area.width, area.height, view.zoom)
   const ptsPerPixel = CANVAS_SIZE / size
@@ -161,8 +164,8 @@ export const CanvasPane = () => {
   }, [size])
 
   useEffect(() => {
-    renderer.current?.render(doc, renderOptionsFromView(view))
-  }, [doc, view])
+    renderer.current?.render(doc, { ...renderOptionsFromView(view), shadows: !gesturing })
+  }, [doc, view, gesturing])
 
   // A drag interrupted by unmount would otherwise leave history suspended.
   useEffect(
@@ -229,6 +232,7 @@ export const CanvasPane = () => {
               startTransform: onHandle.layer.transform,
             }
       setCursor(handleCursor(onHandle.handle))
+      setGesturing(true)
       beginGesture()
       capturePointer(e.currentTarget, e.pointerId)
       return
@@ -259,6 +263,7 @@ export const CanvasPane = () => {
       applied: { dx: 0, dy: 0 },
     }
     setCursor('move')
+    setGesturing(true)
     beginGesture()
     capturePointer(e.currentTarget, e.pointerId)
   }
@@ -321,6 +326,7 @@ export const CanvasPane = () => {
     if (!drag.current) return
     drag.current = null
     endGesture()
+    setGesturing(false)
     setCursor('default')
     releasePointer(e.currentTarget, e.pointerId)
   }

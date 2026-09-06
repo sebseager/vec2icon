@@ -12,6 +12,9 @@ export type RenderOptions = {
   lightAngle: number
   tint: Color
   pixelRatio: number
+  /** false leaves every drop shadow out, so a transform gesture repaints faster.
+   * Omitted means true. */
+  shadows?: boolean
 }
 
 export type Renderer = {

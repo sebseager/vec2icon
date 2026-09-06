@@ -171,7 +171,11 @@ describe('CanvasPane', () => {
 
     fireEvent.pointerMove(stage, { clientX: 100, clientY: 125, pointerId: 1 })
     fireEvent.pointerMove(stage, { clientX: 150, clientY: 150, pointerId: 1 })
+    // shadows are left out while the drag runs
+    expect(fake.renders.at(-1)?.options.shadows).toBe(false)
     fireEvent.pointerUp(stage, { clientX: 150, clientY: 150, pointerId: 1 })
+    // and painted once more on the drop
+    expect(fake.renders.at(-1)?.options.shadows).toBe(true)
 
     const moved = useEditor.getState().doc.groups[0]?.layers[0]?.transform
     expect(moved).toMatchObject({ x: 200, y: 200 })
@@ -188,14 +192,15 @@ describe('CanvasPane', () => {
     const resizes = fake.renderer.resize.mock.calls.length
     const renders = fake.renders.length
 
-    // Three document changes in one drag: press, two moves.
+    // One drag: the press repaints without shadows, the two moves repaint the
+    // moved document, and the drop repaints with shadows back.
     fireEvent.pointerDown(stage, { clientX: 50, clientY: 50, pointerId: 1, button: 0 })
     fireEvent.pointerMove(stage, { clientX: 100, clientY: 100, pointerId: 1 })
     fireEvent.pointerMove(stage, { clientX: 150, clientY: 150, pointerId: 1 })
     fireEvent.pointerUp(stage, { clientX: 150, clientY: 150, pointerId: 1 })
 
     expect(fake.renderer.resize.mock.calls.length).toBe(resizes)
-    expect(fake.renders.length).toBe(renders + 2)
+    expect(fake.renders.length).toBe(renders + 4)
   })
 
   it('ends an in-flight gesture when the pane unmounts', () => {

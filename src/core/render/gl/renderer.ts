@@ -179,6 +179,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       options.pixelRatio,
       options.tint.space,
       options.tint.components.join(','),
+      options.shadows !== false,
       size,
     ].join('|')
 
@@ -783,7 +784,14 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         copyInto(sceneBlur, scene.texture)
       }
 
-      if (group.glass.shadow.kind === 'layer-color') {
+      // Shadows are dropped during a transform gesture: the layer-color kind builds a
+      // mipmap chain of the group every frame, which is the slow part of the pass.
+      const glass: Glass =
+        options.shadows === false
+          ? { ...group.glass, shadow: { ...group.glass.shadow, kind: 'none' } }
+          : group.glass
+
+      if (glass.shadow.kind === 'layer-color') {
         gl.bindTexture(gl.TEXTURE_2D, built.color.texture)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
         gl.generateMipmap(gl.TEXTURE_2D)
@@ -792,7 +800,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       scene = drawGlassPass(
         scene,
         group,
-        group.glass,
+        glass,
         {
           groupTex: built.color.texture,
           glassMask: built.glassMask.texture,
@@ -803,7 +811,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         options,
       )
 
-      if (group.glass.shadow.kind === 'layer-color') {
+      if (glass.shadow.kind === 'layer-color') {
         gl.bindTexture(gl.TEXTURE_2D, built.color.texture)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
       }
