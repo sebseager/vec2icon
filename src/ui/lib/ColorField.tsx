@@ -1,4 +1,4 @@
-/** A swatch that opens a colour picker with hue, saturation, alpha and an editable hex
+/** A swatch that opens a color picker with hue, saturation, alpha and an editable hex
  * field. Every change reports live through `onChange`; `onCommit` fires when the popover
  * closes so callers can end a coalesced history step. */
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
@@ -30,7 +30,7 @@ const HexInput = ({ color, onChange }: { color: Color; onChange: (color: Color) 
       setDraft(shown)
       return
     }
-    // A 6-digit entry keeps the alpha the colour already had.
+    // A 6-digit entry keeps the alpha the color already had.
     onChange(digits.length === 8 ? parsed : withAlpha(parsed, alphaOf(color)))
   }
 

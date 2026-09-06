@@ -7,7 +7,7 @@
 
 /* ---------------------------------------------------------------------------
  * Tokens. Light values on :root, dark values on .dark; the theme provider puts
- * the class on <html>. Everything in src/ui reads colours through these names
+ * the class on <html>. Everything in src/ui reads colors through these names
  * (bg-background, text-muted-foreground, border-border, …), never a raw palette.
  * The set is shadcn's, so `shadcn add` output drops in unchanged; the only
  * additions are `warning` and the app's typography.

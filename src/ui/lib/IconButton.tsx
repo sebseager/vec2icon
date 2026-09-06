@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 
 type Props = Omit<ComponentProps<typeof Button>, 'variant' | 'size'> & {
   label: string
-  /** Pressed state, shown in the accent colour. */
+  /** Pressed state, shown in the accent color. */
   active?: boolean
   size?: 'sm' | 'xs'
   children?: ReactNode

@@ -118,7 +118,7 @@ describe('CanvasPane', () => {
     expect(useEditor.getState().view.rendition).toBe('clearDark')
   })
 
-  it('reveals the tint colour only for the tinted renditions', async () => {
+  it('reveals the tint color only for the tinted renditions', async () => {
     render(<CanvasPane />)
     expect(screen.queryByLabelText('Tint color')).toBeNull()
     await userEvent.click(screen.getByRole('tab', { name: 'Tinted Light' }))

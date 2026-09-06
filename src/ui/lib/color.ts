@@ -52,5 +52,5 @@ export const toGrayColor = (c: Color): Color =>
 export const solidColor = (hex: string, alpha: number): Color =>
   withAlpha(hexToColor(hex) ?? { space: 'srgb', components: [0, 0, 0, 1] }, alpha)
 
-/** `#rrggbbaa` for the colour picker; gray expands to a neutral triplet. */
+/** `#rrggbbaa` for the color picker; gray expands to a neutral triplet. */
 export const colorToHex8 = (c: Color): string => `${colorToHex(c)}${byte(alphaOf(c))}`
