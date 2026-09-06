@@ -146,7 +146,7 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
       options.pixelRatio,
       options.tint.space,
       options.tint.components.join(','),
-      options.shadows !== false,
+      options.gesture === true,
       cssWidth,
       cssHeight,
     ].join('|')
@@ -171,14 +171,17 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
   }
 
   /**
-   * The layer's raster if it is ready. Otherwise the work is started and, while it
-   * runs, the newest raster of the same layer at an older transform stands in, with
-   * the matrix that carries it to the current one; null when there is nothing yet.
+   * The layer's raster if it is ready. Otherwise the newest raster of the same layer
+   * at an older transform stands in, with the matrix that carries it to the current
+   * one, and the exact one is started; null when there is nothing yet. During a
+   * `gesture` the stand-in is drawn without starting anything: the exact raster is
+   * only worth drawing once the layer has come to rest.
    */
   const bitmapFor = (
     layer: Layer,
     resolved: ResolvedLayer,
     rasterSize: number,
+    gesture: boolean,
   ): { bitmap: ImageBitmap; delta: Matrix | null } | null => {
     const ready = peekRaster(layer, resolved, rasterSize)
     if (ready) return { bitmap: ready, delta: null }
@@ -189,6 +192,7 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
     if (stale && old) {
       standIn = { bitmap: old, delta: multiply(layerMatrix(layer), invert(stale.matrix)) }
     }
+    if (standIn && gesture) return standIn
     if (!pending.has(key)) {
       pending.add(key)
       rasterizeLayer(layer, resolved, rasterSize)
@@ -275,14 +279,14 @@ export const createFlatRenderer = (canvas: HTMLCanvasElement): Renderer => {
       for (const layer of [...group.layers].reverse()) {
         const resolved = resolveLayer(layer, plan.appearance)
         if (resolved.hidden || resolved.opacity <= 0) continue
-        const raster = bitmapFor(layer, resolved, rasterSize)
+        const raster = bitmapFor(layer, resolved, rasterSize, options.gesture === true)
         if (!raster || !isDrawableBitmap(raster.bitmap)) continue
         const { bitmap, delta } = raster
 
         ctx.save()
         ctx.globalAlpha = resolved.opacity * group.opacity
         ctx.globalCompositeOperation = CANVAS_BLEND[resolved.blendMode]
-        if (layer.glass && group.glass.shadow.kind !== 'none' && options.shadows !== false) {
+        if (layer.glass && group.glass.shadow.kind !== 'none') {
           ctx.shadowColor = `rgba(0, 0, 0, ${group.glass.shadow.opacity * 0.6})`
           ctx.shadowBlur = SHADOW_BLUR * scale
           ctx.shadowOffsetY = SHADOW_OFFSET * scale

@@ -103,8 +103,9 @@ export const CanvasPane = () => {
   const [area, setArea] = useState({ width: 0, height: 0 })
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [cursor, setCursor] = useState('default')
-  // Shadows are left out while a transform gesture runs, so the drag repaints faster;
-  // the drop repaints once more with them back.
+  // While a transform gesture runs, moved layers are drawn from their last raster
+  // instead of being rasterized again on every pointer move; the drop repaints once
+  // more with the gesture over, which starts the rasters at the final transforms.
   const [gesturing, setGesturing] = useState(false)
 
   const size = stageSize(area.width, area.height, view.zoom)
@@ -164,7 +165,7 @@ export const CanvasPane = () => {
   }, [size])
 
   useEffect(() => {
-    renderer.current?.render(doc, { ...renderOptionsFromView(view), shadows: !gesturing })
+    renderer.current?.render(doc, { ...renderOptionsFromView(view), gesture: gesturing })
   }, [doc, view, gesturing])
 
   // A drag interrupted by unmount would otherwise leave history suspended.

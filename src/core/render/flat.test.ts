@@ -59,6 +59,7 @@ const recordingContext = () => {
     clip() {},
     stroke() {},
     translate() {},
+    transform() {},
     setTransform() {},
     clearRect() {},
     fillRect() {},
@@ -173,41 +174,44 @@ describe('the stub harness itself', () => {
   })
 })
 
-describe('shadows', () => {
-  const paint = async (opts: RenderOptions) => {
-    const { canvas, ctx } = fakeCanvas()
-    const renderer = createFlatRenderer(canvas)
-    renderer.resize(128, 128)
-    renderer.render(docWithLayers(1), opts)
-    await flush()
-    runFrame()
-    expect(ctx.drawn).toHaveLength(1)
-    renderer.dispose()
-    return ctx
-  }
-
-  it('draws a glass layer with a drop shadow by default', async () => {
-    const ctx = await paint(options)
-    expect(ctx.shadowBlur).toBeGreaterThan(0)
+describe('a transform gesture', () => {
+  const movedBy = (doc: IconDoc, x: number): IconDoc => ({
+    ...doc,
+    groups: doc.groups.map((group) => ({
+      ...group,
+      layers: group.layers.map((layer) => ({
+        ...layer,
+        transform: { ...layer.transform, x },
+      })),
+    })),
   })
 
-  it('leaves the shadow out when the options turn shadows off', async () => {
-    const ctx = await paint({ ...options, shadows: false })
-    expect(ctx.shadowBlur).toBe(0)
-  })
-
-  it('repaints when only the shadows flag changes', async () => {
+  it('draws a moved layer from its last raster and rasterizes again only once it ends', async () => {
     const { canvas, ctx } = fakeCanvas()
     const renderer = createFlatRenderer(canvas)
     renderer.resize(128, 128)
     const doc = docWithLayers(1)
-    renderer.render(doc, { ...options, shadows: false })
+    renderer.render(doc, options)
     await flush()
     runFrame()
-    const drawn = ctx.drawn.length
-    renderer.render(doc, options)
+    expect(bitmaps).toHaveLength(1)
+    expect(ctx.drawn).toHaveLength(1)
+
+    // every pointer move during the drag: drawn from the stand-in, nothing started
+    renderer.render(movedBy(doc, 40), { ...options, gesture: true })
+    renderer.render(movedBy(doc, 80), { ...options, gesture: true })
+    await flush()
+    expect(runFrame()).toBe(false)
+    expect(bitmaps).toHaveLength(1)
+    expect(ctx.drawn).toHaveLength(3)
+
+    // the drop: the stand-in once more, then the exact raster once it lands
+    renderer.render(movedBy(doc, 80), options)
+    expect(ctx.drawn).toHaveLength(4)
+    await flush()
+    expect(bitmaps).toHaveLength(2)
     runFrame()
-    expect(ctx.drawn.length).toBeGreaterThan(drawn)
+    expect(ctx.drawn).toHaveLength(5)
     renderer.dispose()
   })
 })

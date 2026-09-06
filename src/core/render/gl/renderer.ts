@@ -179,7 +179,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       options.pixelRatio,
       options.tint.space,
       options.tint.components.join(','),
-      options.shadows !== false,
+      options.gesture === true,
       size,
     ].join('|')
 
@@ -355,12 +355,15 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
    * that is in flight, the newest raster of the same layer at any older transform is
    * redrawn into a borrowed target at the current one, so a layer being dragged never
    * blinks out; the caller releases whatever lands in `borrowed` once it is done.
+   * During a `gesture` that stand-in is all the layer gets: nothing is rasterized
+   * until it comes to rest, so a drag never queues one raster per pointer move.
    */
   const layerTexture = (
     layer: Layer,
     resolved: ResolvedLayer,
     rasterSize: number,
     borrowed: RenderTarget[],
+    gesture: boolean,
   ): WebGLTexture | null => {
     const key = rasterCacheKey(layer, resolved, rasterSize)
     const existing = layerTextures.get(key)
@@ -380,6 +383,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         standIn = target.texture
       }
     }
+    if (standIn && gesture) return standIn
     if (!pending.has(key)) {
       pending.add(key)
       rasterizeLayer(layer, resolved, rasterSize)
@@ -651,6 +655,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     mono: { a: Rgba; b: Rgba } | null,
     appearance: Appearance,
     blurRadius: number,
+    gesture: boolean,
   ): { color: RenderTarget; glassMask: RenderTarget; blurAlpha: RenderTarget } | null => {
     let color = pool.acquire()
     const glassMask = pool.acquire()
@@ -670,7 +675,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     for (const layer of bottomToTop) {
       const resolved = resolveLayer(layer, appearance)
       if (resolved.hidden || resolved.opacity <= 0) continue
-      const texture = layerTexture(layer, resolved, rasterSize, borrowed)
+      const texture = layerTexture(layer, resolved, rasterSize, borrowed, gesture)
       if (!texture) continue
       color = compositeOver(
         color,
@@ -765,7 +770,14 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
     for (const group of [...doc.groups].reverse()) {
       if (group.hidden || group.opacity <= 0 || group.layers.length === 0) continue
       const blurRadius = (BLUR_BASE + group.glass.blurMaterial * BLUR_RANGE) * scale
-      const built = buildGroup(group, rasterSize, mono, plan.appearance, Math.max(1, blurRadius))
+      const built = buildGroup(
+        group,
+        rasterSize,
+        mono,
+        plan.appearance,
+        Math.max(1, blurRadius),
+        options.gesture === true,
+      )
       if (!built) continue
 
       const normalProgram = activate(programs.normals)
@@ -784,14 +796,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         copyInto(sceneBlur, scene.texture)
       }
 
-      // Shadows are dropped during a transform gesture: the layer-color kind builds a
-      // mipmap chain of the group every frame, which is the slow part of the pass.
-      const glass: Glass =
-        options.shadows === false
-          ? { ...group.glass, shadow: { ...group.glass.shadow, kind: 'none' } }
-          : group.glass
-
-      if (glass.shadow.kind === 'layer-color') {
+      if (group.glass.shadow.kind === 'layer-color') {
         gl.bindTexture(gl.TEXTURE_2D, built.color.texture)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
         gl.generateMipmap(gl.TEXTURE_2D)
@@ -800,7 +805,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       scene = drawGlassPass(
         scene,
         group,
-        glass,
+        group.glass,
         {
           groupTex: built.color.texture,
           glassMask: built.glassMask.texture,
@@ -811,7 +816,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
         options,
       )
 
-      if (glass.shadow.kind === 'layer-color') {
+      if (group.glass.shadow.kind === 'layer-color') {
         gl.bindTexture(gl.TEXTURE_2D, built.color.texture)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
       }

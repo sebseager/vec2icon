@@ -12,9 +12,11 @@ export type RenderOptions = {
   lightAngle: number
   tint: Color
   pixelRatio: number
-  /** false leaves every drop shadow out, so a transform gesture repaints faster.
-   * Omitted means true. */
-  shadows?: boolean
+  /** A transform gesture is running. A layer whose raster at its current transform
+   * is missing is drawn from an older one and not rasterized again until the gesture
+   * ends, so a drag never queues one rasterization per pointer move. Omitted means
+   * false. */
+  gesture?: boolean
 }
 
 export type Renderer = {
