@@ -22,7 +22,7 @@ import { loadExample } from '../lib/loadExample'
 import { CanvasToolbar } from './CanvasToolbar'
 import { type Point, unionBBox } from './lib/bbox'
 import { type Frame, layerFrame } from './lib/frame'
-import { rotateResult, scaleResult } from './lib/gestures'
+import { applyScale, rotateResult, scaleFactors } from './lib/gestures'
 import { type HandleId, handleCursor, hitHandle } from './lib/handles'
 import { hitTest } from './lib/hitTest'
 import { capturePointer, releasePointer } from './lib/pointerCapture'
@@ -42,10 +42,12 @@ type Drag =
     }
   | {
       kind: 'scale'
-      layerId: string
+      /** The layer whose handle is held: its pivot and axes drive the gesture. */
+      startTransform: Transform
       pivot: Point
       startPointer: Point
-      startTransform: Transform
+      /** Every selected layer, the held one included; all take the same factors. */
+      layers: Array<{ id: string; startTransform: Transform }>
     }
   | { kind: 'rotate'; layerId: string; pivot: Point; startPointer: Point; startRotation: number }
 
@@ -88,6 +90,7 @@ export const CanvasPane = () => {
   const select = useEditor((s) => s.select)
   const clearSelection = useEditor((s) => s.clearSelection)
   const setTransform = useEditor((s) => s.setTransform)
+  const setTransforms = useEditor((s) => s.setTransforms)
   const nudgeLayers = useEditor((s) => s.nudgeLayers)
   const beginGesture = useEditor((s) => s.beginGesture)
   const endGesture = useEditor((s) => s.endGesture)
@@ -227,10 +230,13 @@ export const CanvasPane = () => {
             }
           : {
               kind: 'scale',
-              layerId: onHandle.layer.id,
+              startTransform: onHandle.layer.transform,
               pivot,
               startPointer: point,
-              startTransform: onHandle.layer.transform,
+              layers: selectedLayers.map((layer) => ({
+                id: layer.id,
+                startTransform: layer.transform,
+              })),
             }
       setCursor(handleCursor(onHandle.handle))
       setGesturing(true)
@@ -299,15 +305,17 @@ export const CanvasPane = () => {
     }
 
     if (active.kind === 'scale') {
-      setTransform(
-        active.layerId,
-        scaleResult({
-          startTransform: active.startTransform,
-          pivot: active.pivot,
-          startPointer: active.startPointer,
-          pointer: point,
-          freeAxis: e.shiftKey,
-        }),
+      const factors = scaleFactors({
+        startTransform: active.startTransform,
+        pivot: active.pivot,
+        startPointer: active.startPointer,
+        pointer: point,
+        freeAxis: e.shiftKey,
+      })
+      setTransforms(
+        Object.fromEntries(
+          active.layers.map(({ id, startTransform }) => [id, applyScale(startTransform, factors)]),
+        ),
       )
       return
     }

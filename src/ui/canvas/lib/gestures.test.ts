@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { identityTransform } from '@/core/model/defaults'
 import {
   angleFromTop,
+  applyScale,
   MIN_SCALE,
   normalizeAngle,
   pointerAngle,
   rotateResult,
+  scaleFactors,
   scaleResult,
   snapToStep,
 } from './gestures'
@@ -68,6 +70,32 @@ describe('rotateResult', () => {
       snap: false,
     })
     expect(rotation).toBeCloseTo(80)
+  })
+})
+
+describe('scaleFactors and applyScale', () => {
+  const start = { x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 }
+
+  it('is a ratio that goes onto any layer, whatever its starting scale', () => {
+    const factors = scaleFactors({
+      startTransform: start,
+      pivot: { x: 0, y: 0 },
+      startPointer: { x: 10, y: 0 },
+      pointer: { x: 30, y: 0 },
+      freeAxis: false,
+    })
+    expect(factors).toEqual({ x: 3, y: 3 })
+    expect(applyScale({ ...start, scaleX: 0.5, scaleY: 2 }, factors)).toEqual({
+      scaleX: 1.5,
+      scaleY: 6,
+    })
+  })
+
+  it('clamps each layer on its own', () => {
+    expect(applyScale({ ...start, scaleX: 0.02, scaleY: 1 }, { x: 0.1, y: 0.1 })).toEqual({
+      scaleX: MIN_SCALE,
+      scaleY: 0.1,
+    })
   })
 })
 

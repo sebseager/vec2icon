@@ -20,6 +20,7 @@ import {
   setGlass,
   setLayerOverride,
   setTransform,
+  setTransforms,
   setWatchOS,
   splitLayer,
   ungroup,
@@ -198,6 +199,31 @@ describe('setTransform', () => {
   it('returns the same doc reference for an unknown layer id', () => {
     const doc = { ...emptyDoc(), groups: [createGroup('G1', [layer('A')])] }
     expect(setTransform(doc, 'nope', { x: 10 })).toBe(doc)
+  })
+})
+
+describe('setTransforms', () => {
+  it('patches each listed layer with its own transform in one step', () => {
+    const a = layer('A')
+    const b = layer('B')
+    const c = layer('C')
+    const doc = { ...emptyDoc(), groups: [createGroup('G1', [a, b, c])] }
+    const next = setTransforms(doc, {
+      [a.id]: { scaleX: 2, scaleY: 2 },
+      [b.id]: { scaleX: 3, scaleY: 0.5, rotation: 10 },
+    })
+    expect(next.groups[0]?.layers[0]?.transform).toMatchObject({ scaleX: 2, scaleY: 2 })
+    expect(next.groups[0]?.layers[1]?.transform).toMatchObject({
+      scaleX: 3,
+      scaleY: 0.5,
+      rotation: 10,
+    })
+    expect(next.groups[0]?.layers[2]).toBe(c)
+  })
+
+  it('returns the same doc reference when no ids match', () => {
+    const doc = { ...emptyDoc(), groups: [createGroup('G1', [layer('A')])] }
+    expect(setTransforms(doc, { nope: { x: 1 } })).toBe(doc)
   })
 })
 

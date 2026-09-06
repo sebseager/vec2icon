@@ -69,6 +69,7 @@ export type EditorState = {
     patch: Partial<LayerOverride> | null,
   ): void
   setTransform(layerId: string, patch: Partial<Transform>): void
+  setTransforms(patches: Record<string, Partial<Transform>>): void
   nudgeLayers(layerIds: string[], dx: number, dy: number): void
   addGroups(groups: Group[], index?: number): void
   addLayersToGroup(groupId: string, layers: Layer[], index?: number): void
@@ -291,6 +292,7 @@ export const useEditor: EditorStore = create<EditorState>()(
         setLayerOverride: (layerId, appearance, patch) =>
           commit((doc) => ops.setLayerOverride(doc, layerId, appearance, patch)),
         setTransform: (layerId, patch) => commit((doc) => ops.setTransform(doc, layerId, patch)),
+        setTransforms: (patches) => commit((doc) => ops.setTransforms(doc, patches)),
         nudgeLayers: (layerIds, dx, dy) => commit((doc) => ops.nudgeLayers(doc, layerIds, dx, dy)),
         addGroups: (groups, index) =>
           commit((doc) => ops.addGroups(doc, groups, index), STRUCTURAL),

@@ -72,6 +72,21 @@ const docWithLayer = () => ({
   ],
 })
 
+/** Two 200pt squares: one at the canvas origin, one moved 400pt down and right. */
+const docWithTwoLayers = () => {
+  const shape = (name: string) =>
+    createLayer({
+      name,
+      svg: '<g/>',
+      defs: '',
+      sourceViewBox: [0, 0, 1024, 1024] as [number, number, number, number],
+      bbox: { x: 0, y: 0, width: 200, height: 200 },
+    })
+  const far = shape('Far')
+  far.transform = { ...far.transform, x: 400, y: 400 }
+  return { ...emptyDoc('Icon'), groups: [createGroup('Group', [shape('Near'), far])] }
+}
+
 describe('CanvasPane', () => {
   it('shows every rendition tab', () => {
     render(<CanvasPane />)
@@ -182,6 +197,27 @@ describe('CanvasPane', () => {
 
     useEditor.getState().undo()
     expect(useEditor.getState().doc.groups[0]?.layers[0]?.transform).toMatchObject({ x: 0, y: 0 })
+  })
+
+  it('scales every selected layer by the same amount from one corner handle', () => {
+    stubLayout()
+    const doc = docWithTwoLayers()
+    useEditor.setState({ doc })
+    const [near, far] = doc.groups[0]?.layers.map((layer) => layer.id) ?? []
+    useEditor.getState().select([near as string, far as string])
+    render(<CanvasPane />)
+    const stage = screen.getByLabelText('Icon canvas')
+
+    // the near square's south-east corner sits at canvas (200, 200) = client (100, 100);
+    // its centre at (100, 100) is the pivot, so doubling the distance doubles the scale
+    fireEvent.pointerDown(stage, { clientX: 100, clientY: 100, pointerId: 1, button: 0 })
+    fireEvent.pointerMove(stage, { clientX: 150, clientY: 150, pointerId: 1 })
+    fireEvent.pointerUp(stage, { clientX: 150, clientY: 150, pointerId: 1 })
+
+    const layers = useEditor.getState().doc.groups[0]?.layers ?? []
+    expect(layers[0]?.transform).toMatchObject({ scaleX: 2, scaleY: 2 })
+    expect(layers[1]?.transform).toMatchObject({ scaleX: 2, scaleY: 2, x: 400, y: 400 })
+    expect(useEditor.getState().selection.layerIds).toEqual([near, far])
   })
 
   it('resizes once per size change, not once per document change', () => {

@@ -56,32 +56,43 @@ const clampScale = (n: number): number => (Math.abs(n) < MIN_SCALE ? MIN_SCALE :
 /** A ratio of pointer distances, or 1 when the handle started on the pivot. */
 const ratio = (from: number, to: number): number => (from === 0 ? 1 : to / from)
 
-/** The layer's new scale after dragging a corner handle. */
-export const scaleResult = ({
+export type ScaleFactors = { x: number; y: number }
+
+/**
+ * How much a corner drag scales, per axis, before it lands on any layer. The same
+ * factors go on every selected layer, so a multi-selection scales together.
+ */
+export const scaleFactors = ({
   startTransform,
   pivot,
   startPointer,
   pointer,
   freeAxis,
-}: ScaleInput): { scaleX: number; scaleY: number } => {
+}: ScaleInput): ScaleFactors => {
   // Per-axis scaling is only meaningful while the layer's axes are the canvas
   // axes; on a rotated layer it falls back to uniform, as the brief allows.
   if (freeAxis && startTransform.rotation === 0) {
     return {
-      scaleX: clampScale(
-        startTransform.scaleX * ratio(startPointer.x - pivot.x, pointer.x - pivot.x),
-      ),
-      scaleY: clampScale(
-        startTransform.scaleY * ratio(startPointer.y - pivot.y, pointer.y - pivot.y),
-      ),
+      x: ratio(startPointer.x - pivot.x, pointer.x - pivot.x),
+      y: ratio(startPointer.y - pivot.y, pointer.y - pivot.y),
     }
   }
   const factor = ratio(
     Math.hypot(startPointer.x - pivot.x, startPointer.y - pivot.y),
     Math.hypot(pointer.x - pivot.x, pointer.y - pivot.y),
   )
-  return {
-    scaleX: clampScale(startTransform.scaleX * factor),
-    scaleY: clampScale(startTransform.scaleY * factor),
-  }
+  return { x: factor, y: factor }
 }
+
+/** `transform` scaled by `factors`, never below the minimum. */
+export const applyScale = (
+  transform: Transform,
+  factors: ScaleFactors,
+): { scaleX: number; scaleY: number } => ({
+  scaleX: clampScale(transform.scaleX * factors.x),
+  scaleY: clampScale(transform.scaleY * factors.y),
+})
+
+/** The handled layer's new scale after dragging a corner handle. */
+export const scaleResult = (input: ScaleInput): { scaleX: number; scaleY: number } =>
+  applyScale(input.startTransform, scaleFactors(input))

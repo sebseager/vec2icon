@@ -94,6 +94,13 @@ export const setLayerOverride = (
 export const setTransform = (doc: IconDoc, layerId: string, patch: Partial<Transform>): IconDoc =>
   updateLayer(doc, layerId, (layer) => ({ ...layer, transform: { ...layer.transform, ...patch } }))
 
+/** Patch several layers' transforms in one step, keyed by layer id. */
+export const setTransforms = (doc: IconDoc, patches: Record<string, Partial<Transform>>): IconDoc =>
+  updateLayers(doc, Object.keys(patches), (layer) => ({
+    ...layer,
+    transform: { ...layer.transform, ...patches[layer.id] },
+  }))
+
 export const nudgeLayers = (doc: IconDoc, layerIds: string[], dx: number, dy: number): IconDoc =>
   updateLayers(doc, layerIds, (layer) => ({
     ...layer,
