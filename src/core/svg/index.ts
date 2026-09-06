@@ -135,7 +135,7 @@ export const importSvgFiles = async (
   return { groups: [createGroup('Imported', relintLayers(layers.reverse()))], rejected }
 }
 
-export { backgroundFill, detectBackground, removeBackground } from './background'
+export { backgroundFill, detectBackground, parseCssColor, removeBackground } from './background'
 export {
   domMeasurer,
   type Measurer,
@@ -143,6 +143,7 @@ export {
   pureMeasurer,
   setDefaultMeasurer,
 } from './bbox'
+export { colorKey, type LayerColor, layerColors, recolorLayer } from './colors'
 export { collectDefs, referencedIds } from './defs'
 export { prefixIds } from './ids'
 export { applyLayerFix, lintDoc, lintLayer, relintLayers } from './lint'

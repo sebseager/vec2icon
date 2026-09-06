@@ -70,8 +70,7 @@ const expandHex = (hex: string): string =>
         .join('')
     : hex
 
-/** Parse a CSS colour into an sRGB `Color`; null for `none`, gradients and anything unknown. */
-const parseColor = (value: string): Color | null => {
+export const parseCssColor = (value: string): Color | null => {
   const text = value.trim().toLowerCase()
   if (!text || text === 'none' || text === 'transparent' || text === 'currentcolor') return null
 
@@ -151,7 +150,7 @@ const gradientAngle = (x1: number, y1: number, x2: number, y2: number): number =
 }
 
 const stopColor = (stop: Element): Color | null => {
-  const color = parseColor(stop.getAttribute('stop-color') ?? '')
+  const color = parseCssColor(stop.getAttribute('stop-color') ?? '')
   if (!color) return null
   const opacity = Number.parseFloat(stop.getAttribute('stop-opacity') ?? '')
   if (Number.isFinite(opacity)) {
@@ -198,7 +197,7 @@ const shapeFill = (root: Element, el: Element): Fill | null => {
   if (!raw) return null
   const reference = /^url\(\s*['"]?#([^)'"\s]+)['"]?\s*\)$/.exec(raw)
   if (reference?.[1]) return gradientFill(root, reference[1])
-  const color = parseColor(raw)
+  const color = parseCssColor(raw)
   return color ? { kind: 'solid', color } : null
 }
 

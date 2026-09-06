@@ -1,11 +1,13 @@
 /** Shown when layers are selected. Several at once share only the values that mean
  * the same thing on every one of them. */
 import { FlipHorizontal, FlipVertical, Link, Unlink } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { updateLayers as updateLayersOp } from '@/core/model/ops'
-import type { Appearance, BlendMode, Layer } from '@/core/model/types'
+import { updateLayer as updateLayerOp, updateLayers as updateLayersOp } from '@/core/model/ops'
+import type { Appearance, BlendMode, Color, Layer } from '@/core/model/types'
+import { colorKey, layerColors, recolorLayer } from '@/core/svg'
 import { useEditor } from '@/state'
+import { ColorField } from '../lib/ColorField'
 import { Field, Section, SwitchRow } from '../lib/Field'
 import { HelpTip } from '../lib/HelpTip'
 import { IconButton } from '../lib/IconButton'
@@ -17,6 +19,67 @@ import { TextField } from '../lib/TextField'
 import { LayerOverrides } from './LayerOverrides'
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
+
+/** One swatch. The picker fires faster than the document re-renders, so the key of the
+ * color to replace is tracked here rather than read back from the layer each time. */
+const LayerSwatch = ({
+  layerId,
+  colorKey: key,
+  color,
+  index,
+}: {
+  layerId: string
+  colorKey: string
+  color: Color
+  index: number
+}) => {
+  const commitCoalesced = useEditor((s) => s.commitCoalesced)
+  const current = useRef(key)
+  const lastProp = useRef(key)
+  if (lastProp.current !== key) {
+    lastProp.current = key
+    current.current = key
+  }
+
+  return (
+    <ColorField
+      compact
+      label={`Color ${index + 1}`}
+      color={color}
+      onChange={(next) => {
+        const from = current.current
+        current.current = colorKey(next)
+        commitCoalesced((doc) =>
+          updateLayerOp(doc, layerId, (layer) => recolorLayer(layer, from, next)),
+        )
+      }}
+    />
+  )
+}
+
+/** Every color the artwork paints with. Editing one rewrites it wherever it appears. */
+const LayerColors = ({ layer }: { layer: Layer }) => {
+  const colors = useMemo(() => layerColors(layer), [layer])
+  if (colors.length === 0) return null
+  return (
+    <div className="flex min-h-7 items-start gap-2 py-0.5">
+      <span className="w-[4.5rem] shrink-0 truncate pt-1 text-muted-foreground">Colors</span>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+        {colors.map((entry, index) => (
+          <LayerSwatch
+            // keyed by position so a swatch survives its own recolor with the picker open
+            // biome-ignore lint/suspicious/noArrayIndexKey: position is the identity here
+            key={index}
+            layerId={layer.id}
+            colorKey={entry.key}
+            color={entry.color}
+            index={index}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const Placement = ({ layer }: { layer: Layer }) => {
   const setTransform = useEditor((s) => s.setTransform)
@@ -139,6 +202,7 @@ export const LayerInspector = ({
               />
             </Field>
             <Placement layer={first} />
+            <LayerColors layer={first} />
           </>
         ) : null}
 

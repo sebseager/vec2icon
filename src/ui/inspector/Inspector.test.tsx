@@ -11,6 +11,46 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
+describe('Inspector with one layer selected', () => {
+  const selectPaintedLayer = async () => {
+    const { createGroup, createLayer } = await import('@/core/model/defaults')
+    const layer = createLayer({
+      name: 'Badge',
+      svg: '<g><rect width="10" height="10" fill="#ff0000"/><circle r="2" fill="#00ff00" stroke="#ff0000"/></g>',
+      defs: '',
+      sourceViewBox: [0, 0, 100, 100],
+      bbox: { x: 0, y: 0, width: 10, height: 10 },
+    })
+    useEditor.getState().addGroups([createGroup('One', [layer])])
+    useEditor.getState().select([layer.id])
+    return layer.id
+  }
+
+  it('lists each color the artwork uses as a swatch', async () => {
+    await selectPaintedLayer()
+    render(<Inspector />)
+    expect(screen.getByText('Colors')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Color 1' }).title).toBe('#ff0000')
+    expect(screen.getByRole('button', { name: 'Color 2' }).title).toBe('#00ff00')
+  })
+
+  it('recolors every use of a swatch when its hex is edited', async () => {
+    const user = userEvent.setup()
+    const id = await selectPaintedLayer()
+    render(<Inspector />)
+    await user.click(screen.getByRole('button', { name: 'Color 1' }))
+    const hex = screen.getByLabelText('Hex')
+    await user.clear(hex)
+    await user.type(hex, '0000ff{Enter}')
+
+    const layer = useEditor.getState().doc.groups[0]?.layers.find((l) => l.id === id)
+    expect(layer?.svg).toBe(
+      '<g><rect width="10" height="10" fill="#0000ff"/><circle r="2" fill="#00ff00" stroke="#0000ff"/></g>',
+    )
+    expect(screen.getByRole('button', { name: 'Color 1' }).title).toBe('#0000ff')
+  })
+})
+
 describe('Inspector with nothing selected', () => {
   it('changes the default document fill when the fill kind changes', async () => {
     const user = userEvent.setup()

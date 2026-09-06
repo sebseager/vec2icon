@@ -80,12 +80,15 @@ export const ColorField = ({
   onChange,
   onCommit,
   disabled,
+  compact = false,
 }: {
   label: string
   color: Color
   onChange: (color: Color) => void
   onCommit?: () => void
   disabled?: boolean
+  /** Just the swatch, for a row of several colors. The hex still reads out in the picker. */
+  compact?: boolean
 }) => {
   const [open, setOpen] = useState(false)
   // Base UI can report one close more than once (escape, then focus leaving); commit once.
@@ -102,16 +105,24 @@ export const ColorField = ({
     >
       <PopoverTrigger
         aria-label={label}
+        title={compact ? colorToHex(color) : undefined}
         disabled={disabled}
-        className="flex h-6 min-w-0 flex-1 items-center gap-1.5 rounded-md border border-input px-1.5 text-left outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 aria-expanded:bg-muted dark:bg-input/30"
+        className={cn(
+          'flex items-center rounded-md border border-input outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 aria-expanded:bg-muted dark:bg-input/30',
+          compact ? 'size-6 justify-center' : 'h-6 min-w-0 flex-1 gap-1.5 px-1.5 text-left',
+        )}
       >
         <Swatch color={color} className="border border-border" />
-        <span className="truncate font-mono text-xs uppercase">{colorToHex(color)}</span>
-        {alphaOf(color) < 1 ? (
-          <span className="ml-auto shrink-0 text-muted-foreground">
-            {Math.round(alphaOf(color) * 100)}%
-          </span>
-        ) : null}
+        {compact ? null : (
+          <>
+            <span className="truncate font-mono text-xs uppercase">{colorToHex(color)}</span>
+            {alphaOf(color) < 1 ? (
+              <span className="ml-auto shrink-0 text-muted-foreground">
+                {Math.round(alphaOf(color) * 100)}%
+              </span>
+            ) : null}
+          </>
+        )}
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" sideOffset={4} className="w-56 gap-2 p-2">
         <HexAlphaColorPicker
