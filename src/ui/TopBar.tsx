@@ -1,5 +1,5 @@
 /** Document identity on the left, the actions that leave the editor on the right. */
-import { Download, Redo2, Undo2, Upload } from 'lucide-react'
+import { Download, Redo2, Sparkles, Undo2, Upload } from 'lucide-react'
 import { type KeyboardEvent, useState, useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -106,6 +106,10 @@ export const TopBar = () => {
             void importFiles(files, useEditor.getState())
           }}
         />
+        <Button variant="outline" size="sm" onClick={() => setView({ composeOpen: true })}>
+          <Sparkles data-icon="inline-start" aria-hidden="true" />
+          AI Compose
+        </Button>
         <Button variant="outline" size="sm" onClick={openImportPicker}>
           <Upload data-icon="inline-start" aria-hidden="true" />
           Import

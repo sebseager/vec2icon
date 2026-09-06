@@ -42,6 +42,7 @@ export type View = {
   issuesOpen: boolean
   exportOpen: boolean
   helpOpen: boolean
+  composeOpen: boolean
 }
 
 export type Toast = {
@@ -58,6 +59,8 @@ export type EditorState = {
 
   setDoc(doc: IconDoc, opts?: { silent?: boolean }): void
   importGroups(groups: Group[]): void
+  /** One undo step: the composed groups, the background they came with, and a name for an empty doc. */
+  importComposed(groups: Group[], fill: Fill | null, name: string): void
 
   updateLayer(layerId: string, patch: Partial<Layer> | ((l: Layer) => Layer)): void
   updateLayers(layerIds: string[], patch: Partial<Layer> | ((l: Layer) => Layer)): void
@@ -125,6 +128,7 @@ const initialView = (): View => ({
   issuesOpen: false,
   exportOpen: false,
   helpOpen: false,
+  composeOpen: false,
 })
 
 const sameFixes = (a: IssueFix[], b: IssueFix[]): boolean =>
@@ -281,6 +285,16 @@ export const useEditor: EditorStore = create<EditorState>()(
 
         importGroups: (groups) => {
           commit((doc) => ops.addGroups(doc, groups, 0), STRUCTURAL)
+          const first = groups.flatMap((g) => g.layers)[0]
+          if (first) get().select([first.id])
+        },
+
+        importComposed: (groups, fill, name) => {
+          commit((doc) => {
+            const named = doc.groups.length === 0 ? ops.renameDoc(doc, name) : doc
+            const filled = fill ? ops.setDocFill(named, 'default', fill) : named
+            return ops.addGroups(filled, groups, 0)
+          }, STRUCTURAL)
           const first = groups.flatMap((g) => g.layers)[0]
           if (first) get().select([first.id])
         },

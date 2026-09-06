@@ -85,6 +85,17 @@ export const HelpDialog = () => {
           </p>
         </Topic>
 
+        <Topic title="AI Compose">
+          <p>
+            Describe an icon and Claude Opus draws it as layered SVG, which is then imported like a
+            dropped file. It needs your own Anthropic API key, kept only in this browser and sent
+            only to api.anthropic.com; each run is billed to your account, usually a few cents. The
+            dialog shows the most a run can cost before you start. When the drawing fails the import
+            checks it can be handed back to the model to fix a bounded number of times, or imported
+            as is so you can fix it by hand.
+          </p>
+        </Topic>
+
         <Topic title="Export">
           <p>
             Xcode 26 reads the base format. Specular placement and refractivity are Icon Composer 2
