@@ -29,8 +29,12 @@ export type RotateInput = {
   snap: boolean
 }
 
-/** The layer's new rotation after sweeping the pointer around the pivot. */
-export const rotateResult = ({
+/**
+ * How far a rotate drag turns, in degrees, before it lands on any layer. The same
+ * delta goes on every selected layer, so a multi-selection turns together. Snapping
+ * lands the held layer on a step and turns the rest by that same adjusted amount.
+ */
+export const rotateDelta = ({
   startRotation,
   pivot,
   startPointer,
@@ -38,9 +42,14 @@ export const rotateResult = ({
   snap,
 }: RotateInput): number => {
   const delta = pointerAngle(pivot, pointer) - pointerAngle(pivot, startPointer)
-  const rotation = normalizeAngle(startRotation + delta)
-  return snap ? normalizeAngle(snapToStep(rotation, ROTATION_SNAP_STEP)) : rotation
+  if (!snap) return delta
+  return snapToStep(startRotation + delta, ROTATION_SNAP_STEP) - startRotation
 }
+
+/** `transform` turned by `delta` degrees, wrapped into 0..360. */
+export const applyRotation = (transform: Transform, delta: number): { rotation: number } => ({
+  rotation: normalizeAngle(transform.rotation + delta),
+})
 
 export type ScaleInput = {
   startTransform: Transform
@@ -92,7 +101,3 @@ export const applyScale = (
   scaleX: clampScale(transform.scaleX * factors.x),
   scaleY: clampScale(transform.scaleY * factors.y),
 })
-
-/** The handled layer's new scale after dragging a corner handle. */
-export const scaleResult = (input: ScaleInput): { scaleX: number; scaleY: number } =>
-  applyScale(input.startTransform, scaleFactors(input))

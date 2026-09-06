@@ -22,7 +22,7 @@ import { loadExample } from '../lib/loadExample'
 import { CanvasToolbar } from './CanvasToolbar'
 import { type Point, unionBBox } from './lib/bbox'
 import { type Frame, layerFrame } from './lib/frame'
-import { applyScale, rotateResult, scaleFactors } from './lib/gestures'
+import { applyRotation, applyScale, rotateDelta, scaleFactors } from './lib/gestures'
 import { type HandleId, handleCursor, hitHandle } from './lib/handles'
 import { hitTest } from './lib/hitTest'
 import { capturePointer, releasePointer } from './lib/pointerCapture'
@@ -41,15 +41,15 @@ type Drag =
       applied: Delta
     }
   | {
-      kind: 'scale'
-      /** The layer whose handle is held: its pivot and axes drive the gesture. */
+      kind: 'scale' | 'rotate'
+      /** The layer whose handle is held: its centre is the pivot, and its axes and
+       * rotation decide how Shift behaves. */
       startTransform: Transform
       pivot: Point
       startPointer: Point
-      /** Every selected layer, the held one included; all take the same factors. */
+      /** Every selected layer, the held one included; all take the same change. */
       layers: Array<{ id: string; startTransform: Transform }>
     }
-  | { kind: 'rotate'; layerId: string; pivot: Point; startPointer: Point; startRotation: number }
 
 const layersById = (doc: IconDoc, ids: readonly string[]): Layer[] => {
   const wanted = new Set(ids)
@@ -89,7 +89,6 @@ export const CanvasPane = () => {
   const selectedIds = useEditor((s) => s.selection.layerIds)
   const select = useEditor((s) => s.select)
   const clearSelection = useEditor((s) => s.clearSelection)
-  const setTransform = useEditor((s) => s.setTransform)
   const setTransforms = useEditor((s) => s.setTransforms)
   const nudgeLayers = useEditor((s) => s.nudgeLayers)
   const beginGesture = useEditor((s) => s.beginGesture)
@@ -218,26 +217,13 @@ export const CanvasPane = () => {
 
     const onHandle = handleAt(point)
     if (onHandle) {
-      const pivot = layerFrame(onHandle.layer).centre
-      drag.current =
-        onHandle.handle === 'rotate'
-          ? {
-              kind: 'rotate',
-              layerId: onHandle.layer.id,
-              pivot,
-              startPointer: point,
-              startRotation: onHandle.layer.transform.rotation,
-            }
-          : {
-              kind: 'scale',
-              startTransform: onHandle.layer.transform,
-              pivot,
-              startPointer: point,
-              layers: selectedLayers.map((layer) => ({
-                id: layer.id,
-                startTransform: layer.transform,
-              })),
-            }
+      drag.current = {
+        kind: onHandle.handle === 'rotate' ? 'rotate' : 'scale',
+        startTransform: onHandle.layer.transform,
+        pivot: layerFrame(onHandle.layer).centre,
+        startPointer: point,
+        layers: selectedLayers.map((layer) => ({ id: layer.id, startTransform: layer.transform })),
+      }
       setCursor(handleCursor(onHandle.handle))
       setGesturing(true)
       beginGesture()
@@ -320,15 +306,18 @@ export const CanvasPane = () => {
       return
     }
 
-    setTransform(active.layerId, {
-      rotation: rotateResult({
-        startRotation: active.startRotation,
-        pivot: active.pivot,
-        startPointer: active.startPointer,
-        pointer: point,
-        snap: e.shiftKey,
-      }),
+    const delta = rotateDelta({
+      startRotation: active.startTransform.rotation,
+      pivot: active.pivot,
+      startPointer: active.startPointer,
+      pointer: point,
+      snap: e.shiftKey,
     })
+    setTransforms(
+      Object.fromEntries(
+        active.layers.map(({ id, startTransform }) => [id, applyRotation(startTransform, delta)]),
+      ),
+    )
   }
 
   const endDrag = (e: ReactPointerEvent) => {

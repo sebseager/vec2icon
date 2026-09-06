@@ -220,6 +220,28 @@ describe('CanvasPane', () => {
     expect(useEditor.getState().selection.layerIds).toEqual([near, far])
   })
 
+  it('turns every selected layer by the same sweep from one rotate handle', () => {
+    stubLayout()
+    const doc = docWithTwoLayers()
+    useEditor.setState({ doc })
+    const [near, far] = doc.groups[0]?.layers.map((layer) => layer.id) ?? []
+    useEditor.getState().select([near as string, far as string])
+    render(<CanvasPane />)
+    const stage = screen.getByLabelText('Icon canvas')
+
+    // the near square's rotate handle floats 24 screen px (48 pt) above its top edge
+    // at canvas (100, -48) = client (50, -24); sweeping a quarter turn clockwise about
+    // the centre (100, 100) ends level with it at canvas (248, 100) = client (124, 50)
+    fireEvent.pointerDown(stage, { clientX: 50, clientY: -24, pointerId: 1, button: 0 })
+    fireEvent.pointerMove(stage, { clientX: 124, clientY: 50, pointerId: 1 })
+    fireEvent.pointerUp(stage, { clientX: 124, clientY: 50, pointerId: 1 })
+
+    const layers = useEditor.getState().doc.groups[0]?.layers ?? []
+    expect(layers[0]?.transform.rotation).toBeCloseTo(90)
+    expect(layers[1]?.transform.rotation).toBeCloseTo(90)
+    expect(layers[1]?.transform).toMatchObject({ x: 400, y: 400, scaleX: 1, scaleY: 1 })
+  })
+
   it('resizes once per size change, not once per document change', () => {
     stubLayout()
     useEditor.setState({ doc: docWithLayer() })
