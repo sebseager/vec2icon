@@ -215,8 +215,10 @@ describe('CanvasPane', () => {
     fireEvent.pointerUp(stage, { clientX: 150, clientY: 150, pointerId: 1 })
 
     const layers = useEditor.getState().doc.groups[0]?.layers ?? []
-    expect(layers[0]?.transform).toMatchObject({ scaleX: 2, scaleY: 2 })
-    expect(layers[1]?.transform).toMatchObject({ scaleX: 2, scaleY: 2, x: 400, y: 400 })
+    expect(layers[0]?.transform).toMatchObject({ scaleX: 2, scaleY: 2, x: 0, y: 0 })
+    // the far square's centre sat 400 pt from the pivot on each axis; doubling the
+    // selection as one piece puts it 800 pt away, so it moves by another 400
+    expect(layers[1]?.transform).toMatchObject({ scaleX: 2, scaleY: 2, x: 800, y: 800 })
     expect(useEditor.getState().selection.layerIds).toEqual([near, far])
   })
 
@@ -238,8 +240,14 @@ describe('CanvasPane', () => {
 
     const layers = useEditor.getState().doc.groups[0]?.layers ?? []
     expect(layers[0]?.transform.rotation).toBeCloseTo(90)
+    expect(layers[0]?.transform.x).toBeCloseTo(0)
+    expect(layers[0]?.transform.y).toBeCloseTo(0)
+    // the far square orbits the pivot: its centre at (500, 500), 400 right and 400 below
+    // the pivot, swings a quarter turn clockwise to 400 left and 400 below it
     expect(layers[1]?.transform.rotation).toBeCloseTo(90)
-    expect(layers[1]?.transform).toMatchObject({ x: 400, y: 400, scaleX: 1, scaleY: 1 })
+    expect(layers[1]?.transform.x).toBeCloseTo(-400)
+    expect(layers[1]?.transform.y).toBeCloseTo(400)
+    expect(layers[1]?.transform).toMatchObject({ scaleX: 1, scaleY: 1 })
   })
 
   it('resizes once per size change, not once per document change', () => {

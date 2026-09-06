@@ -47,8 +47,9 @@ type Drag =
       startTransform: Transform
       pivot: Point
       startPointer: Point
-      /** Every selected layer, the held one included; all take the same change. */
-      layers: Array<{ id: string; startTransform: Transform }>
+      /** Every selected layer, the held one included; all take the same change about the
+       * pivot, so `startCentre` is where each layer's own pivot sat when the drag began. */
+      layers: Array<{ id: string; startTransform: Transform; startCentre: Point }>
     }
 
 const layersById = (doc: IconDoc, ids: readonly string[]): Layer[] => {
@@ -222,7 +223,11 @@ export const CanvasPane = () => {
         startTransform: onHandle.layer.transform,
         pivot: layerFrame(onHandle.layer).centre,
         startPointer: point,
-        layers: selectedLayers.map((layer) => ({ id: layer.id, startTransform: layer.transform })),
+        layers: selectedLayers.map((layer) => ({
+          id: layer.id,
+          startTransform: layer.transform,
+          startCentre: layerFrame(layer).centre,
+        })),
       }
       setCursor(handleCursor(onHandle.handle))
       setGesturing(true)
@@ -300,7 +305,10 @@ export const CanvasPane = () => {
       })
       setTransforms(
         Object.fromEntries(
-          active.layers.map(({ id, startTransform }) => [id, applyScale(startTransform, factors)]),
+          active.layers.map(({ id, startTransform, startCentre }) => [
+            id,
+            applyScale(startTransform, factors, startCentre, active.pivot),
+          ]),
         ),
       )
       return
@@ -315,7 +323,10 @@ export const CanvasPane = () => {
     })
     setTransforms(
       Object.fromEntries(
-        active.layers.map(({ id, startTransform }) => [id, applyRotation(startTransform, delta)]),
+        active.layers.map(({ id, startTransform, startCentre }) => [
+          id,
+          applyRotation(startTransform, delta, startCentre, active.pivot),
+        ]),
       ),
     )
   }

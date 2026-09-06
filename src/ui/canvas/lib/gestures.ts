@@ -46,10 +46,28 @@ export const rotateDelta = ({
   return snapToStep(startRotation + delta, ROTATION_SNAP_STEP) - startRotation
 }
 
-/** `transform` turned by `delta` degrees, wrapped into 0..360. */
-export const applyRotation = (transform: Transform, delta: number): { rotation: number } => ({
-  rotation: normalizeAngle(transform.rotation + delta),
-})
+/**
+ * `transform` turned by `delta` degrees about `pivot`, wrapped into 0..360. `centre` is
+ * where the layer's own pivot sits now; it orbits `pivot` by the same sweep, so a
+ * multi-selection turns as one rigid piece rather than each layer spinning in place.
+ */
+export const applyRotation = (
+  transform: Transform,
+  delta: number,
+  centre: Point,
+  pivot: Point,
+): { rotation: number; x: number; y: number } => {
+  const rad = delta / DEG
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const dx = centre.x - pivot.x
+  const dy = centre.y - pivot.y
+  return {
+    rotation: normalizeAngle(transform.rotation + delta),
+    x: transform.x + (dx * cos - dy * sin) - dx,
+    y: transform.y + (dx * sin + dy * cos) - dy,
+  }
+}
 
 export type ScaleInput = {
   startTransform: Transform
@@ -93,11 +111,19 @@ export const scaleFactors = ({
   return { x: factor, y: factor }
 }
 
-/** `transform` scaled by `factors`, never below the minimum. */
+/**
+ * `transform` scaled by `factors`, never below the minimum. `centre` is where the layer's
+ * own pivot sits now; it is drawn toward `pivot` by the same factors, so a multi-selection
+ * shrinks or grows as one piece and the gaps between layers scale with the layers.
+ */
 export const applyScale = (
   transform: Transform,
   factors: ScaleFactors,
-): { scaleX: number; scaleY: number } => ({
+  centre: Point,
+  pivot: Point,
+): { scaleX: number; scaleY: number; x: number; y: number } => ({
   scaleX: clampScale(transform.scaleX * factors.x),
   scaleY: clampScale(transform.scaleY * factors.y),
+  x: transform.x + (factors.x - 1) * (centre.x - pivot.x),
+  y: transform.y + (factors.y - 1) * (centre.y - pivot.y),
 })
