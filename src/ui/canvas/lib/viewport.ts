@@ -2,8 +2,9 @@
 import { CANVAS_SIZE } from '@/core/model/types'
 import type { Point } from './bbox'
 
-/** Breathing room around the fitted canvas, in CSS pixels. */
-export const FIT_PADDING = 32
+/** Breathing room around the fitted canvas, in CSS pixels: enough for the preview
+ * caption to sit in the gutter beneath the stage without touching it. */
+export const FIT_PADDING = 56
 export const MIN_ZOOM = 0.25
 export const MAX_ZOOM = 4
 /** How much one wheel notch changes the zoom multiplier. */

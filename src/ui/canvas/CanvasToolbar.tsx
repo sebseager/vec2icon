@@ -10,10 +10,8 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { Platform, Rendition } from '@/core/model/types'
-import type { Renderer } from '@/core/render'
 import { useEditor, type Wallpaper } from '@/state'
 import { ColorField } from '../lib/ColorField'
-import { HelpTip } from '../lib/HelpTip'
 import { LightDial } from './LightDial'
 
 /** `short` is what the tab shows; `label` stays its accessible name and tooltip, so the
@@ -43,16 +41,10 @@ const WALLPAPERS: Array<{ value: Wallpaper; label: string }> = [
 
 const Divider = () => <Separator orientation="vertical" className="self-stretch" />
 
-type Props = {
-  /** null until the renderer has been created. */
-  rendererKind: Renderer['kind'] | null
-}
-
-export const CanvasToolbar = ({ rendererKind }: Props) => {
+export const CanvasToolbar = () => {
   const view = useEditor((s) => s.view)
   const setView = useEditor((s) => s.setView)
   const tinted = view.rendition === 'tintedLight' || view.rendition === 'tintedDark'
-  const flat = rendererKind === 'flat'
 
   return (
     <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted px-2 text-muted-foreground">
@@ -135,22 +127,6 @@ export const CanvasToolbar = ({ rendererKind }: Props) => {
         <LightDial angle={view.lightAngle} onChange={(lightAngle) => setView({ lightAngle })} />
         <span className="w-8 tabular-nums">{Math.round(view.lightAngle)}&deg;</span>
       </div>
-
-      <span className="ml-auto flex shrink-0 items-center gap-1.5">
-        <span>{flat ? 'Flat preview (WebGL unavailable)' : 'Approximate preview'}</span>
-        <HelpTip topic="Approximate preview">
-          Glass, refraction and specular highlights are approximations of Apple&rsquo;s renderer,
-          and the iOS 27 generation is not matched. Icon Composer and Xcode are the reference for
-          how the icon will really look.
-          {flat ? (
-            <>
-              {' '}
-              WebGL2 is unavailable in this browser, so layers are composited flat with a drop
-              shadow and no glass at all.
-            </>
-          ) : null}
-        </HelpTip>
-      </span>
     </div>
   )
 }

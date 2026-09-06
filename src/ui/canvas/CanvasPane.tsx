@@ -16,6 +16,7 @@ import { CANVAS_SIZE } from '@/core/model/types'
 import { createRenderer, type Renderer } from '@/core/render'
 import { safeArea } from '@/core/render/shapes'
 import { useEditor } from '@/state'
+import { HelpTip } from '../lib/HelpTip'
 import { openImportPicker } from '../lib/importPicker'
 import { loadExample } from '../lib/loadExample'
 import { CanvasToolbar } from './CanvasToolbar'
@@ -58,6 +59,27 @@ const layersById = (doc: IconDoc, ids: readonly string[]): Layer[] => {
   }
   return out
 }
+
+/** The "this is an approximation" note, sitting in the gutter under the stage. */
+const PreviewCaption = ({ flat }: { flat: boolean }) => (
+  <span className="pointer-events-none absolute inset-x-0 bottom-1.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+    <span>{flat ? 'Flat preview (WebGL unavailable)' : 'Approximate preview'}</span>
+    <span className="pointer-events-auto flex">
+      <HelpTip topic="Approximate preview">
+        Glass, refraction and specular highlights are approximations of Apple&rsquo;s renderer, and
+        the iOS 27 generation is not matched. Icon Composer and Xcode are the reference for how the
+        icon will really look.
+        {flat ? (
+          <>
+            {' '}
+            WebGL2 is unavailable in this browser, so layers are composited flat with a drop shadow
+            and no glass at all.
+          </>
+        ) : null}
+      </HelpTip>
+    </span>
+  </span>
+)
 
 export const CanvasPane = () => {
   const doc = useEditor((s) => s.doc)
@@ -305,7 +327,7 @@ export const CanvasPane = () => {
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col bg-background">
-      <CanvasToolbar rendererKind={rendererKind} />
+      <CanvasToolbar />
       <div
         ref={areaRef}
         // Clicking the gutter around the stage is a click on nothing, same as
@@ -336,6 +358,7 @@ export const CanvasPane = () => {
             ptsPerPixel={ptsPerPixel}
           />
         </div>
+        <PreviewCaption flat={rendererKind === 'flat'} />
         {doc.groups.length === 0 && (
           <div className="pointer-events-none absolute flex flex-col items-center gap-1 rounded-xl border bg-background/95 px-8 py-6 text-center shadow-lg shadow-black/10">
             <FileUp

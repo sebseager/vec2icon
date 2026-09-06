@@ -273,6 +273,9 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
       uSourceMatrix: uvMatrix(source),
     })
     drawFullscreenTriangle(gl)
+    // Uniforms outlive the draw, so the warp is switched off again here: a later use
+    // of the copy program that never sets it would otherwise warp through this matrix.
+    setUniforms(gl, program, { uSourceWarp: 0 })
   }
 
   const copyInto = (target: RenderTarget, source: WebGLTexture): void => {
@@ -695,7 +698,7 @@ export const createGlRenderer = (canvas: HTMLCanvasElement): Renderer | null => 
           gl.blendEquation(gl.MAX)
           gl.blendFunc(gl.ONE, gl.ONE)
           bindTextures(gl, program, { uSource: single.texture })
-          setUniforms(gl, program, { uFlipSource: TARGET_FLIP, uAlpha: 1 })
+          setUniforms(gl, program, { uFlipSource: TARGET_FLIP, uAlpha: 1, uSourceWarp: 0 })
           drawFullscreenTriangle(gl)
           gl.blendEquation(gl.FUNC_ADD)
         }
