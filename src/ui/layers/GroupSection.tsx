@@ -3,10 +3,10 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { type KeyboardEvent, useState } from 'react'
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ import { IconButton } from '../lib/IconButton'
 import { percent } from '../lib/options'
 import { groupDropId } from './dropTarget'
 import { LayerRow } from './LayerRow'
+import { ContextEntries, DropdownEntries, type MenuEntry } from './MenuItems'
 
 const glassSummary = (group: Group): string => {
   const { lighting, blurMaterial, shadow } = group.glass
@@ -56,72 +57,82 @@ export const GroupSection = ({
     else if (e.key === 'Escape') setDraft(null)
   }
 
+  const entries: MenuEntry[] = [
+    {
+      kind: 'item',
+      label: 'Select all layers',
+      disabled: group.layers.length === 0,
+      onClick: () => select(group.layers.map((l) => l.id)),
+    },
+    { kind: 'item', label: 'Rename', onClick: () => setDraft(group.name) },
+    { kind: 'item', label: 'Delete group', onClick: () => removeGroup(group.id, false) },
+    {
+      kind: 'item',
+      label: 'Delete group, keep layers',
+      onClick: () => removeGroup(group.id, true),
+    },
+  ]
+
   return (
     <section className="border-b">
-      <div
-        ref={collapsed ? setNodeRef : undefined}
-        className={`flex h-7 items-center gap-0.5 pr-1 pl-0.5 ${
-          selected ? 'bg-primary/10 text-foreground' : 'text-foreground hover:bg-muted'
-        }`}
-      >
-        <IconButton
-          label={collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
-          size="xs"
-          className="size-5"
-          onClick={() => onToggle(group.id)}
+      <ContextMenu>
+        <ContextMenuTrigger
+          render={
+            <div
+              ref={collapsed ? setNodeRef : undefined}
+              className={`flex h-7 items-center gap-0.5 pr-1 pl-0.5 ${
+                selected ? 'bg-primary/10 text-foreground' : 'text-foreground hover:bg-muted'
+              }`}
+            />
+          }
         >
-          {collapsed ? (
-            <ChevronRight size={14} aria-hidden="true" />
-          ) : (
-            <ChevronDown size={14} aria-hidden="true" />
-          )}
-        </IconButton>
-
-        {draft === null ? (
-          <button
-            type="button"
-            className="min-w-0 flex-1 truncate px-1 text-left font-medium"
-            onClick={() => selectGroup(group.id)}
-            onDoubleClick={() => setDraft(group.name)}
+          <IconButton
+            label={collapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
+            size="xs"
+            className="size-5"
+            onClick={() => onToggle(group.id)}
           >
-            {group.name}
-          </button>
-        ) : (
-          <Input
-            autoFocus
-            aria-label="Group name"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={onNameKeyDown}
-            className="h-6 min-w-0 flex-1 px-1 text-xs md:text-xs"
-          />
-        )}
+            {collapsed ? (
+              <ChevronRight size={14} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={14} aria-hidden="true" />
+            )}
+          </IconButton>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<IconButton label={`${group.name} options`} size="xs" />}>
-            <MoreHorizontal size={14} aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-auto">
-            <DropdownMenuItem
-              className="text-xs"
-              disabled={group.layers.length === 0}
-              onClick={() => select(group.layers.map((l) => l.id))}
+          {draft === null ? (
+            <button
+              type="button"
+              className="min-w-0 flex-1 truncate px-1 text-left font-medium"
+              onClick={() => selectGroup(group.id)}
+              onDoubleClick={() => setDraft(group.name)}
             >
-              Select all layers
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-xs" onClick={() => setDraft(group.name)}>
-              Rename
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-xs" onClick={() => removeGroup(group.id, false)}>
-              Delete group
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-xs" onClick={() => removeGroup(group.id, true)}>
-              Delete group, keep layers
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              {group.name}
+            </button>
+          ) : (
+            <Input
+              autoFocus
+              aria-label="Group name"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={onNameKeyDown}
+              className="h-6 min-w-0 flex-1 px-1 text-xs md:text-xs"
+            />
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<IconButton label={`${group.name} options`} size="xs" />}>
+              <MoreHorizontal size={14} aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto">
+              <DropdownEntries entries={entries} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextEntries entries={entries} />
+        </ContextMenuContent>
+      </ContextMenu>
 
       {collapsed ? null : (
         <>

@@ -59,6 +59,49 @@ describe('row context menu', () => {
   })
 })
 
+describe('row overflow menu', () => {
+  it('offers the same actions as the context menu', async () => {
+    const user = userEvent.setup()
+    render(<LayersPanel />)
+    await user.click(screen.getByRole('button', { name: 'Glyph options' }))
+    const fromDots = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    await user.keyboard('{Escape}')
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByText('Glyph') })
+    const fromRightClick = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    expect(fromDots).toEqual(fromRightClick)
+    expect(fromDots).toContain('Duplicate')
+  })
+
+  it('duplicates a layer from the three dots', async () => {
+    const user = userEvent.setup()
+    render(<LayersPanel />)
+    await user.click(screen.getByRole('button', { name: 'Glyph options' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Duplicate' }))
+    expect(useEditor.getState().doc.groups[0]?.layers).toHaveLength(4)
+  })
+})
+
+describe('group header context menu', () => {
+  it('offers the same actions as the three dots', async () => {
+    const user = userEvent.setup()
+    render(<LayersPanel />)
+    await user.click(screen.getByRole('button', { name: 'One options' }))
+    const fromDots = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    await user.keyboard('{Escape}')
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByText('One') })
+    const fromRightClick = screen.getAllByRole('menuitem').map((item) => item.textContent)
+    expect(fromDots).toEqual(fromRightClick)
+  })
+
+  it('selects every layer of a group from the right-click menu', async () => {
+    const user = userEvent.setup()
+    render(<LayersPanel />)
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByText('One') })
+    await user.click(screen.getByRole('menuitem', { name: 'Select all layers' }))
+    expect(selectedNames()).toEqual(['Glyph', 'Ring', 'Dot'])
+  })
+})
+
 describe('selecting rows', () => {
   it('toggles rows with Cmd/Ctrl and extends a range with Shift', async () => {
     const user = userEvent.setup()

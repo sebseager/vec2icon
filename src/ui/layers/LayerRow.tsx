@@ -2,23 +2,20 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Eye, EyeOff, GripVertical, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, GripVertical, MoreHorizontal, Sparkles } from 'lucide-react'
 import { type KeyboardEvent, type MouseEvent, useState } from 'react'
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import type { Layer } from '@/core/model/types'
 import { mergeLayers as mergeLayersFn, splitLayer as splitLayerFn } from '@/core/svg'
 import { useEditor } from '@/state'
 import { IconButton } from '../lib/IconButton'
+import { ContextEntries, DropdownEntries, type MenuEntry } from './MenuItems'
 
 /** The rows an action applies to: the whole selection when this row is part of it. */
 const targetIds = (selected: string[], layerId: string): string[] =>
@@ -98,6 +95,48 @@ export const LayerRow = ({
     fn()
   }
 
+  const entries: MenuEntry[] = [
+    {
+      kind: 'item',
+      label: 'Split',
+      onClick: run(() => useEditor.getState().splitLayer(layer.id, splitLayerFn)),
+    },
+    {
+      kind: 'item',
+      label: 'Merge',
+      disabled: !canMerge,
+      onClick: run(() => useEditor.getState().mergeLayers(ids, mergeLayersFn)),
+    },
+    {
+      kind: 'item',
+      label: 'Duplicate',
+      onClick: run(() => useEditor.getState().duplicateLayers(ids)),
+    },
+    { kind: 'item', label: 'Delete', onClick: run(() => useEditor.getState().removeLayers(ids)) },
+    { kind: 'separator' },
+    {
+      kind: 'item',
+      label: 'Move to new group',
+      onClick: run(() => useEditor.getState().groupFromLayers(ids)),
+    },
+    {
+      kind: 'sub',
+      label: 'Move to group',
+      disabled: groups.length < 2,
+      items: groups
+        .filter((g) => g.id !== groupId)
+        .map((g) => ({
+          kind: 'item' as const,
+          label: g.name,
+          onClick: run(() => {
+            const state = useEditor.getState()
+            for (const id of ids) state.moveLayer(id, g.id, 0)
+          }),
+        })),
+    },
+    { kind: 'item', label: 'Ungroup', onClick: () => useEditor.getState().ungroup(groupId) },
+  ]
+
   return (
     <li
       ref={setNodeRef}
@@ -176,68 +215,19 @@ export const LayerRow = ({
               className="size-1.5 shrink-0 rounded-full bg-warning"
             />
           ) : null}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<IconButton label={`${layer.name} options`} size="xs" />}>
+              <MoreHorizontal size={14} aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto">
+              <DropdownEntries entries={entries} />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </ContextMenuTrigger>
 
         <ContextMenuContent>
-          <ContextMenuItem
-            className="text-xs"
-            onClick={run(() => useEditor.getState().splitLayer(layer.id, splitLayerFn))}
-          >
-            Split
-          </ContextMenuItem>
-          <ContextMenuItem
-            className="text-xs"
-            disabled={!canMerge}
-            onClick={run(() => useEditor.getState().mergeLayers(ids, mergeLayersFn))}
-          >
-            Merge
-          </ContextMenuItem>
-          <ContextMenuItem
-            className="text-xs"
-            onClick={run(() => useEditor.getState().duplicateLayers(ids))}
-          >
-            Duplicate
-          </ContextMenuItem>
-          <ContextMenuItem
-            className="text-xs"
-            onClick={run(() => useEditor.getState().removeLayers(ids))}
-          >
-            Delete
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            className="text-xs"
-            onClick={run(() => useEditor.getState().groupFromLayers(ids))}
-          >
-            Move to new group
-          </ContextMenuItem>
-          <ContextMenuSub>
-            <ContextMenuSubTrigger className="text-xs" disabled={groups.length < 2}>
-              Move to group
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              {groups
-                .filter((g) => g.id !== groupId)
-                .map((g) => (
-                  <ContextMenuItem
-                    key={g.id}
-                    className="text-xs"
-                    onClick={run(() => {
-                      const state = useEditor.getState()
-                      for (const id of ids) state.moveLayer(id, g.id, 0)
-                    })}
-                  >
-                    {g.name}
-                  </ContextMenuItem>
-                ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-          <ContextMenuItem
-            className="text-xs"
-            onClick={() => useEditor.getState().ungroup(groupId)}
-          >
-            Ungroup
-          </ContextMenuItem>
+          <ContextEntries entries={entries} />
         </ContextMenuContent>
       </ContextMenu>
     </li>
